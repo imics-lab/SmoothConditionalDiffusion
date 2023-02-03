@@ -7,6 +7,7 @@
 import argparse
 import torch
 from datasets import load_dataset
+from diffuser import load_diffuser
 
 CUDA_DEV_NUM = ':0'
 
@@ -27,4 +28,5 @@ if __name__ == '__main__':
         args.device = 'cpu'
     print("---Experiments on Probilbalistic Conditional Diffusion---")
 
-    X_original = load_dataset(args)
+    X_original, y_clean, y_noisy = load_dataset(args)
+    generator = load_diffuser(args)
