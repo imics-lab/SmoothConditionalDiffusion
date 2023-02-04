@@ -1,3 +1,4 @@
 *.npy
 *.pyc
 *.pt
+events.out.tfevents*

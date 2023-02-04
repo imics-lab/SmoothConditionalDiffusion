@@ -9,8 +9,6 @@ import os
 import random
 from gen_ts_data import generate_signal_as_tensor
 
-DATA_DIRECTORY = 'data'
-
 def get_noisy_synthetic_dataset(args, num_classes):
     SIGNAL_LENGTH = 128
     SET_LENGTH = 5001
@@ -46,21 +44,21 @@ def get_noisy_synthetic_dataset(args, num_classes):
 
 
 def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
-    if not os.path.exists(DATA_DIRECTORY):
-        os.mkdir(DATA_DIRECTORY)
+    if not os.path.exists(args.data_path):
+        os.mkdir(args.data_path)
     if args.dataset=='synthetic_5':
-        if os.path.exists(os.path.join(DATA_DIRECTORY, 'synthetic_5_X.pt')):
+        if os.path.exists(os.path.join(args.data_path, 'synthetic_5_X.pt')):
             print("Synthetic 5 dataset located")
-            X = torch.load(os.path.join(DATA_DIRECTORY, 'synthetic_5_X.pt'))
-            y_clean = torch.load(os.path.join(DATA_DIRECTORY, 'synthetic_5_y_clean.pt'))
-            y_noisy = torch.load(os.path.join(DATA_DIRECTORY, 'synthetic_5_y_noisy.pt'))
+            X = torch.load(os.path.join(args.data_path, 'synthetic_5_X.pt'))
+            y_clean = torch.load(os.path.join(args.data_path, 'synthetic_5_y_clean.pt'))
+            y_noisy = torch.load(os.path.join(args.data_path, 'synthetic_5_y_noisy.pt'))
 
         else:
             print("Generating Synthetic 5 dataset")
             X, y_clean, y_noisy = get_noisy_synthetic_dataset(args, 5)
-            torch.save(X, os.path.join(DATA_DIRECTORY, 'synthetic_5_X.pt'))
-            torch.save(y_clean, os.path.join(DATA_DIRECTORY, 'synthetic_5_y_clean.pt'))
-            torch.save(y_noisy, os.path.join(DATA_DIRECTORY, 'synthetic_5_y_noisy.pt'))
+            torch.save(X, os.path.join(args.data_path, 'synthetic_5_X.pt'))
+            torch.save(y_clean, os.path.join(args.data_path, 'synthetic_5_y_clean.pt'))
+            torch.save(y_noisy, os.path.join(args.data_path, 'synthetic_5_y_noisy.pt'))
 
     return X, y_clean, y_noisy
 
@@ -70,6 +68,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args.dataset = 'synthetic_5'
+    args.data_path = 'data'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy = load_dataset(args)
     print('Number of mislabeled instances: ', np.count_nonzero(y_clean != y_noisy))
