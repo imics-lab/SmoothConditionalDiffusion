@@ -17,6 +17,7 @@ def load_args():
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default='0.05')
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
     parser.add_argument('--difusion_style', help="Unconditional, conditional, or probabalistic_conditional", default='probabalistic_conditional')
+    parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     args = parser.parse_args()
     return args
 
