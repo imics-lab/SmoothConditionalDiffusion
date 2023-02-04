@@ -44,7 +44,6 @@ def get_noisy_synthetic_dataset(args, num_classes):
 
     return X, y_clean, y_noisy
 
-
 def download_mit_bih_dataset(args):
     #assert os.path.exists('~/kaggle.json/kaggle.json'), "A Kaggle API token is required"
     os.system('kaggle datasets download shayanfazeli/heartbeat')
@@ -93,12 +92,12 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
             print("Downloading MIT Arythmia Dataset")
             download_mit_bih_dataset(args)
         filename = os.path.join(args.data_path, 'mitbih_train.csv')
-        data = mitbih_allClass(isBalanced = True, filename=filename, n_samples=5000)
+        data = mitbih_allClass(isBalanced = True, filename=filename, n_samples=2000)
         X, y_clean = data[:]
         X = torch.Tensor(X)
         y_clean = torch.Tensor(y_clean)
-        print('X shape: ', X.shape)
-        print('y_clean shape: ', y_clean.shape)
+        print('MIT BIH X shape: ', X.shape)
+        print('MIT BIH y_clean shape: ', y_clean.shape)
         y_noisy = get_noisy_labels_for_mit(args, y_clean)
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
