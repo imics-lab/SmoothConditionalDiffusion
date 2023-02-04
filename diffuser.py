@@ -74,13 +74,13 @@ def train_unconditional(args, model, diffusion, dataloader, logger, optimizer):
         
         is_best = False
         
-        save_signals(sampled_signals, os.path.join("results", args.run_name, f"{epoch}.jpg"))
+        save_signals(sampled_signals, os.path.join(args.run_path, f"{args.diffusion_style}_training_{epoch}.jpg"))
         save_checkpoint({
             'epoch': epoch + 1,
             'model': model,
             'model_state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-        }, is_best, os.path.join("checkpoint", args.run_name))
+        }, is_best, args.run_path)
     return model, diffusion
 
 def train_conditional(args, model, diffusion, dataloader, logger, optimizer):

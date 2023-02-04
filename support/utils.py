@@ -46,7 +46,7 @@ def save_signals(signals, path, **kwargs):
     for i in range(2):
         for j in range(5):
             axs[i, j].plot(signals[i*5+j][0][:])
-    plt.savefig(path, format="jpeg")
+    plt.savefig(path, format="png")
     
 
 def save_signals_cls_free(signals, labels, path, **kwargs):

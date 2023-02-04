@@ -196,7 +196,7 @@ class mitbih_augData(Dataset):
 def main():
     class0 = mitbih_oneClass(class_id = 0)
     class_0_1 = mitbih_twoClass(class_id1 = 0, class_id2 = 1)
-#     data = mitbih_allClass(isBalanced = True, n_samples=2000)
+    data = mitbih_allClass(isBalanced = True, n_samples=2000)
 #     data = mitbih_allClass(isBalanced = False)
     
 #     mixData = mitbih_augData(n_samples=2000)

@@ -8,6 +8,8 @@ import torch
 import os
 import random
 from gen_ts_data import generate_signal_as_tensor
+import zipfile
+from support.MITBIH import mitbih_allClass
 
 def get_noisy_synthetic_dataset(args, num_classes):
     SIGNAL_LENGTH = 128
@@ -43,6 +45,26 @@ def get_noisy_synthetic_dataset(args, num_classes):
     return X, y_clean, y_noisy
 
 
+def download_mit_bih_dataset(args):
+    #assert os.path.exists('~/kaggle.json/kaggle.json'), "A Kaggle API token is required"
+    os.system('kaggle datasets download shayanfazeli/heartbeat')
+    os.system(f'mv heartbeat.zip {args.data_path}/.')
+    with zipfile.ZipFile(f'{args.data_path}/heartbeat.zip', 'r') as zip_ref:
+        zip_ref.extractall(args.data_path)
+    os.system(f'rm {args.data_path}/heartbeat.zip')
+
+def get_noisy_labels_for_mit(args, y_clean):
+    num_classes = torch.max(y_clean)+1
+    y_noisy = torch.zeros_like(y_clean)
+    for i, y in enumerate(y_clean):
+        if random.random() <= args.mislab_rate:
+            y_noisy[i] = random.randint(0, num_classes)
+            while y_noisy[i] == y_clean[i]: y_noisy[i] = random.randint(0, num_classes)
+        else:
+            y_noisy[i] = y_clean[i]
+    return y_noisy
+
+
 def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     if not os.path.exists(args.data_path):
         os.mkdir(args.data_path)
@@ -64,6 +86,20 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
             torch.save(X, os.path.join(args.data_path, 'synthetic_5_X.pt'))
             torch.save(y_clean, os.path.join(args.data_path, 'synthetic_5_y_clean.pt'))
             torch.save(y_noisy, os.path.join(args.data_path, 'synthetic_5_y_noisy.pt'))
+    elif args.dataset=='mitbih':
+        if os.path.exists(os.path.join(args.data_path, 'mitbih_train.csv')):
+            print("Found MIT Arythmia Dataset")
+        else:
+            print("Downloading MIT Arythmia Dataset")
+            download_mit_bih_dataset(args)
+        filename = os.path.join(args.data_path, 'mitbih_train.csv')
+        data = mitbih_allClass(isBalanced = True, filename=filename, n_samples=5000)
+        X, y_clean = data[:]
+        X = torch.Tensor(X)
+        y_clean = torch.Tensor(y_clean)
+        print('X shape: ', X.shape)
+        print('y_clean shape: ', y_clean.shape)
+        y_noisy = get_noisy_labels_for_mit(args, y_clean)
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
 
@@ -74,8 +110,8 @@ if __name__ == '__main__':
     import numpy as np
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
-    args.dataset = 'synthetic_5'
-    args.data_path = 'data'
+    args .data_path = 'data'
+    args.dataset = 'mitbih'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy = load_dataset(args)
     print('Number of mislabeled instances: ', np.count_nonzero(y_clean != y_noisy))
