@@ -7,8 +7,9 @@
 import torch
 from torch import optim
 from support.modules1D import Unet1D, GaussianDiffusion1D
+from support.modules1D_cls_free import Unet1D_cls_free, GaussianDiffusion1D_cls_free
 import logging
-import tqdm
+from tqdm import tqdm
 import os
 from support.utils import save_signals, save_checkpoint
 
@@ -32,6 +33,23 @@ def load_diffuser(args):
             ).to(args.device)
         else:
             print(f"Denoising Model choice: {args.diffusion_model} is not supported")
+    if args.diffusion_style == 'conditional':
+        if args.diffusion_model == 'UNet1d':
+            assert args.data_cardinality == '1d', "Data cardinality must match denoising model"
+            model = Unet1D_cls_free(
+                dim = 64,
+                dim_mults = (1, 2, 4, 8),
+                num_classes = args.num_classes,
+                cond_drop_prob = 0.5,
+                channels = 1
+            ).to(args.device)
+
+        
+            diffusion = GaussianDiffusion1D_cls_free(
+                model,
+                seq_length = 128,
+                timesteps = 1000
+            ).to(args.device)
     else:
         print(f"Diffusion Style choice: {args.diffusion_style} is not supported")
     return model, diffusion

@@ -46,7 +46,12 @@ def get_noisy_synthetic_dataset(args, num_classes):
 def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     if not os.path.exists(args.data_path):
         os.mkdir(args.data_path)
+    args.num_classes = 0
+    X = None
+    y_clean = None
+    y_noisy = None
     if args.dataset=='synthetic_5':
+        args.num_classes = 5
         if os.path.exists(os.path.join(args.data_path, 'synthetic_5_X.pt')):
             print("Synthetic 5 dataset located")
             X = torch.load(os.path.join(args.data_path, 'synthetic_5_X.pt'))
@@ -59,6 +64,8 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
             torch.save(X, os.path.join(args.data_path, 'synthetic_5_X.pt'))
             torch.save(y_clean, os.path.join(args.data_path, 'synthetic_5_y_clean.pt'))
             torch.save(y_noisy, os.path.join(args.data_path, 'synthetic_5_y_noisy.pt'))
+    else:
+        print(f'Chosen dataset: {args.dataset} is not supported')
 
     return X, y_clean, y_noisy
 

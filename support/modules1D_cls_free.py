@@ -821,4 +821,4 @@ if __name__ == '__main__':
         cond_scale = 3.                # condition scaling, anything greater than 1 strengthens the classifier free guidance. reportedly 3-8 is good empirically
     )
 
-    print(sampled_images.shape) # (8, 3, 128)
+    print(sampled_signals.shape) # (8, 3, 128)
