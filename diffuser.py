@@ -11,7 +11,7 @@ from support.modules1D_cls_free import Unet1D_cls_free, GaussianDiffusion1D_cls_
 import logging
 from tqdm import tqdm
 import os
-from support.utils import save_signals, save_checkpoint
+from support.utils import save_signals, save_checkpoint, save_signals_cls_free
 
 def load_diffuser(args):
     model = None
@@ -54,10 +54,8 @@ def load_diffuser(args):
         print(f"Diffusion Style choice: {args.diffusion_style} is not supported")
     return model, diffusion
 
-def train_diffusion(args, model, diffusion, dataloader, logger):
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+def train_unconditional(args, model, diffusion, dataloader, logger, optimizer):
     l = len(dataloader)
-
     for epoch in range(args.epochs):
         logging.info(f"Starting epoch {epoch}:")
         pbar = tqdm(dataloader)
@@ -83,5 +81,53 @@ def train_diffusion(args, model, diffusion, dataloader, logger):
             'model_state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }, is_best, os.path.join("checkpoint", args.run_name))
+    return model, diffusion
+
+def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
+    l = len(dataloader)
+
+    for epoch in range(args.epochs):
+        logging.info(f"Starting epoch {epoch}:")
+        pbar = tqdm(dataloader)
+        for i, (signals, labels) in enumerate(pbar):
+            signals = signals.to(args.device).to(torch.float)
+            labels = labels.to(args.device).to(torch.long)
+            loss = diffusion(signals, classes = labels)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            logger.add_scalar("loss", loss.item(), global_step=epoch * l + i)
+
+        labels = torch.randint(0, args.num_classes, (10,)).to(args.device)
+        sampled_signals = diffusion.sample(
+            classes = labels,
+            cond_scale = 3.)
+        sampled_signals.shape # (10, 1, 128)
+        
+        is_best = False
+        
+        save_signals_cls_free(sampled_signals, labels, os.path.join("results", args.run_name, f"{epoch}.jpg"))
+        save_checkpoint({
+            'epoch': epoch + 1,
+            'model': model,
+            'model_state_dict': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+        }, is_best, os.path.join("checkpoint", args.run_name))
+    return model, diffusion
+
+def train_diffusion(args, model, diffusion, dataloader, logger):
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+    l = len(dataloader)
+    if args.diffusion_style == 'unconditional':
+        model, diffusion = train_unconditional(args, model, diffusion, dataloader, logger, optimizer)
+    elif args.diffusion_style == 'conditional':
+        model, diffusion = train_conditional(args, model, diffusion, dataloader, logger, optimizer)
+    else:
+        print(f'Selected diffusion style: {args.diffusion_style} is not supported.')
+        model, diffusion = None, None
+
+    
     
     return model, diffusion
