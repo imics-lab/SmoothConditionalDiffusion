@@ -56,7 +56,7 @@ def save_signals_cls_free(signals, labels, path, **kwargs):
         for j in range(5):
             axs[i, j].plot(signals[i*5+j][0][:])
             axs[i, j].set_title(f'{labels[i*5+j]}')
-    plt.savefig(path, format="jpeg")
+    plt.savefig(path, format="png")
             
 
 def save_checkpoint(states, is_best, output_dir, filename="checkpoint.pt"):
