@@ -14,7 +14,7 @@ from MITBIH import *
 from torch.utils import data
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
-data_path = "~/Downloads/mitbih_train.csv"
+data_path = "~/Probabilistic_Conditional_Diffusion/data/mitbih_train.csv"
 
 
 def train(args):

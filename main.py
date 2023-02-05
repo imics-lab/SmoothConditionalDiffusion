@@ -15,19 +15,19 @@ from multiprocessing import cpu_count
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
-CUDA_DEV_NUM = ':0'
+CUDA_DEV_NUM = ':3'
 
 def load_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mitbih')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabalistic_conditional", default='unconditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabalistic_conditional", default='conditional')
     parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing runs outpus", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
-    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=8)
+    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
     parser.add_argument('--epochs', help="Number of epochs for training", default=200)
     args = parser.parse_args()
@@ -47,6 +47,7 @@ if __name__ == '__main__':
 
     X_original, y_clean, y_noisy = load_dataset(args)
     dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers)
+    #figure out what's happening to the labels
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
     model, generator = load_diffuser(args)
     model, generator = train_diffusion(args, model, generator, dataloader, logger)
