@@ -114,7 +114,7 @@ def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
             'model': model,
             'model_state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-        }, is_best, os.path.join("checkpoint", args.run_name))
+        }, is_best,args.run_path)
     return model, diffusion
 
 def train_diffusion(args, model, diffusion, dataloader, logger):

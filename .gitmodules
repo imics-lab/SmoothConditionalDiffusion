@@ -1,0 +1,3 @@
+[submodule "HOC"]
+	path = HOC
+	url = git@github.com:UCSC-REAL/HOC.git
