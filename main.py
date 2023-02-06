@@ -39,10 +39,11 @@ if __name__ == '__main__':
         os.mkdir(args.run_path)
     logger = SummaryWriter(os.path.join("runs", args.run_path))
     if torch.cuda.is_available():
-        args.device = 'cuda' + CUDA_DEV_NUM
+        args.device = 'cpu' + CUDA_DEV_NUM
     else:
         args.device = 'cpu'
     args.num_workers = cpu_count()
+    #args.num_workers = 4
     print("---Experiments on Probilbalistic Conditional Diffusion---")
 
     X_original, y_clean, y_noisy = load_dataset(args)
@@ -50,4 +51,8 @@ if __name__ == '__main__':
     #figure out what's happening to the labels
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
     model, generator = load_diffuser(args)
+    # y = dataloader.dataset.tensors[1]
+    # print('Biggest label: ', torch.max(y))
+    # print('Biggest y clean: ', torch.max(y_clean))
+    # print('Biggest y noisy: ', torch.max(y_noisy))
     model, generator = train_diffusion(args, model, generator, dataloader, logger)

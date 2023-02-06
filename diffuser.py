@@ -119,10 +119,12 @@ def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
 
 def train_diffusion(args, model, diffusion, dataloader, logger):
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    l = len(dataloader)
+    
     if args.diffusion_style == 'unconditional':
         model, diffusion = train_unconditional(args, model, diffusion, dataloader, logger, optimizer)
     elif args.diffusion_style == 'conditional':
+        #y = dataloader.dataset.tensors[1]
+        #print('Biggest label: ', torch.max(y))
         model, diffusion = train_conditional(args, model, diffusion, dataloader, logger, optimizer)
     else:
         print(f'Selected diffusion style: {args.diffusion_style} is not supported.')

@@ -36,8 +36,8 @@ def get_noisy_synthetic_dataset(args, num_classes):
             sig_dict['variance_amplitude'][y_clean[i]],
         )
         if random.random() <= args.mislab_rate:
-            y_noisy[i] = random.randint(0, num_classes)
-            while y_noisy[i] == y_clean[i]: y_noisy[i] = random.randint(0, num_classes)
+            y_noisy[i] = random.randint(0, num_classes-1)
+            while y_noisy[i] == y_clean[i]: y_noisy[i] = random.randint(0, num_classes-1)
         else:
             y_noisy[i] = y_clean[i]
         
@@ -53,12 +53,11 @@ def download_mit_bih_dataset(args):
     os.system(f'rm {args.data_path}/heartbeat.zip')
 
 def get_noisy_labels_for_mit(args, y_clean):
-    num_classes = torch.max(y_clean)+1
     y_noisy = torch.zeros_like(y_clean)
     for i, y in enumerate(y_clean):
         if random.random() <= args.mislab_rate:
-            y_noisy[i] = random.randint(0, num_classes)
-            while y_noisy[i] == y_clean[i]: y_noisy[i] = random.randint(0, num_classes)
+            y_noisy[i] = random.randint(0, args.num_classes-1)
+            while y_noisy[i] == y_clean[i]: y_noisy[i] = random.randint(0, args.num_classes-1)
         else:
             y_noisy[i] = y_clean[i]
     return y_noisy
@@ -76,8 +75,8 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
         if os.path.exists(os.path.join(args.data_path, 'synthetic_5_X.pt')):
             print("Synthetic 5 dataset located")
             X = torch.load(os.path.join(args.data_path, 'synthetic_5_X.pt'))
-            y_clean = torch.load(os.path.join(args.data_path, 'synthetic_5_y_clean.pt'))
-            y_noisy = torch.load(os.path.join(args.data_path, 'synthetic_5_y_noisy.pt'))
+            y_clean = torch.load(os.path.join(args.data_path, 'synthetic_5_y_clean.pt')).int()
+            y_noisy = torch.load(os.path.join(args.data_path, 'synthetic_5_y_noisy.pt')).int()
 
         else:
             print("Generating Synthetic 5 dataset")
@@ -86,6 +85,7 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
             torch.save(y_clean, os.path.join(args.data_path, 'synthetic_5_y_clean.pt'))
             torch.save(y_noisy, os.path.join(args.data_path, 'synthetic_5_y_noisy.pt'))
     elif args.dataset=='mitbih':
+        args.num_classes = 5
         if os.path.exists(os.path.join(args.data_path, 'mitbih_train.csv')):
             print("Found MIT Arythmia Dataset")
         else:
@@ -95,13 +95,17 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
         data = mitbih_allClass(isBalanced = True, filename=filename, n_samples=2000)
         X, y_clean = data[:]
         X = torch.Tensor(X)
-        y_clean = torch.Tensor(y_clean)
+        y_clean = torch.Tensor(y_clean).int()
         print('MIT BIH X shape: ', X.shape)
         print('MIT BIH y_clean shape: ', y_clean.shape)
         y_noisy = get_noisy_labels_for_mit(args, y_clean)
+        y_noisy = y_noisy.int()
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
 
+    # print('Max y_clean: ', torch.max(y_clean))
+    # print('Max y_noisy: ', torch.max(y_noisy))
+    
     return X, y_clean, y_noisy
 
 if __name__ == '__main__':
