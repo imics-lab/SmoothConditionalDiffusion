@@ -19,7 +19,7 @@ CUDA_DEV_NUM = ':3'
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mitbih')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
     parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabalistic_conditional", default='conditional')
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     args.num_workers = cpu_count()
     print("---Experiments on Probilbalistic Conditional Diffusion---")
 
-    X_original, y_clean, y_noisy = load_dataset(args)
+    X_original, y_clean, y_noisy, T = load_dataset(args)
     dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
     model, generator = load_diffuser(args)
