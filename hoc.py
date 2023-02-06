@@ -228,7 +228,6 @@ def calc_func(KINDS, p_estimate, LOCAL, _device, max_step=501, T0=None, p0=None,
     T = T.to(_device)
     P = P.to(_device)
     p_estimate = [item.to(_device) for item in p_estimate]
-    print(f'using {_device} to solve equations')
 
     T.requires_grad = True
     P.requires_grad = True
@@ -501,13 +500,56 @@ def get_score(knn_labels_cnt, label, k, method='cores', prior=None):  # method =
 
     return score
 
+def count_y_known2nn(KINDS, label_list, cluster_sum=None):
+
+    if cluster_sum is not None:
+        sample = np.random.choice(range(label_list.shape[0]), cluster_sum, replace=False)
+        label_list = label_list[sample]
+
+    cnt = [[] for _ in range(3)]
+    cnt[0] = torch.zeros(KINDS)
+    cnt[1] = torch.zeros(KINDS, KINDS)
+    cnt[2] = torch.zeros(KINDS, KINDS, KINDS)
+
+    for i in range(cluster_sum):
+        cnt[0][label_list[i][0]] += 1
+        cnt[1][label_list[i][0]][label_list[i][1]] += 1
+        cnt[2][label_list[i][0]][label_list[i][1]][label_list[i][2]] += 1
+
+    return cnt
+
+def get_T_global_min_2nn(args, record, max_step = 501, T0 = None, p0 = None, lr = 0.1, NumTest = 50, all_point_cnt = 15000):
+
+    KINDS = args.num_classes
+    all_point_cnt = np.min((all_point_cnt,int(len(record)*0.9)))
+    p_estimate = [[] for _ in range(3)]
+    p_estimate[0] = torch.zeros(KINDS)
+    p_estimate[1] = torch.zeros(KINDS, KINDS)
+    p_estimate[2] = torch.zeros(KINDS, KINDS, KINDS)
+    for idx in range(NumTest):
+        print(idx, flush=True)
+        cnt_y_3 = count_y_known2nn(KINDS, record, all_point_cnt)
+        for i in range(3):
+            cnt_y_3[i] /= all_point_cnt
+            p_estimate[i] = p_estimate[i] + cnt_y_3[i] if idx != 0 else cnt_y_3[i]
+
+    for j in range(3):
+        p_estimate[j] = p_estimate[j] / NumTest
+
+    args.device = set_device()
+    loss_min, E_calc, P_calc, T_init = calc_func(KINDS, p_estimate, False, args.device, max_step, T0, p0, lr = lr)
+
+    E_calc = E_calc.cpu().numpy()
+    T_init = T_init.cpu().numpy()
+    return E_calc, T_init
+
 def get_T_global_min_new(args, data_set, max_step=501, T0=None, p0=None, lr=0.1, NumTest=50, all_point_cnt=15000, global_dic=None):
 
 
     # Build Feature Clusters --------------------------------------
     KINDS = args.num_classes
     # NumTest = 50
-    all_point_cnt = args.cnt
+    #all_point_cnt = args.cnt
     print(f'Use {all_point_cnt} in each round. Total rounds {NumTest}.')
 
     p_estimate = [[] for _ in range(3)]
@@ -516,7 +558,7 @@ def get_T_global_min_new(args, data_set, max_step=501, T0=None, p0=None, lr=0.1,
     p_estimate[2] = torch.zeros(KINDS, KINDS, KINDS)
     # p_estimate_rec = torch.zeros(NumTest, 3)
     for idx in range(NumTest):
-        # print(idx, flush=True)
+        print(idx, flush=True)
         # global
         sample = np.random.choice(range(data_set['feature'].shape[0]), all_point_cnt, replace=False)
         # final_feat, noisy_label = get_feat_clusters(data_set, sample)
@@ -530,7 +572,7 @@ def get_T_global_min_new(args, data_set, max_step=501, T0=None, p0=None, lr=0.1,
     for j in range(3):
         p_estimate[j] = p_estimate[j] / NumTest
 
-    args.device = set_device()
+    #args.device = set_device()
     loss_min, E_calc, P_calc, _ , global_dic = calc_func(KINDS, p_estimate, False, args.device, max_step, T0, p0, lr=lr, global_dic=global_dic)
     E_calc = E_calc.cpu().numpy()
     P_calc = P_calc.cpu().numpy()

@@ -12,6 +12,8 @@ from torch.utils.tensorboard import SummaryWriter
 import logging
 import os
 from multiprocessing import cpu_count
+from hoc import get_T_global_min_new
+from ts_feature_toolkit import get_features_for_set
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
@@ -22,7 +24,7 @@ def load_args():
     parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabalistic_conditional", default='conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabalistic_conditional", default='probabalistic_conditional')
     parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing runs outpus", default='runs')
@@ -46,7 +48,21 @@ if __name__ == '__main__':
     print("---Experiments on Probilbalistic Conditional Diffusion---")
 
     X_original, y_clean, y_noisy, T = load_dataset(args)
+
     dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
+
+    T = None
+    if args.diffusion_style == 'probabalistic_conditional':
+        print('Estimating Transition Matrix')
+        f = get_features_for_set(X_original)
+        ds = {
+            'feature' : f,
+            'noisy_label' : y_noisy
+        }       
+        T, P, global_dic = get_T_global_min_new(args, ds, T0=torch.eye(args.num_classes), all_point_cnt=args.cnt//5, global_dic={})
+
+    print(T)
+
     model, generator = load_diffuser(args)
     model, generator = train_diffusion(args, model, generator, dataloader, logger)

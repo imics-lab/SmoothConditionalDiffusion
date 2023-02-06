@@ -70,6 +70,7 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     X = None
     y_clean = None
     y_noisy = None
+    T = None
     if args.dataset=='synthetic_5':
         args.num_classes = 5
         if os.path.exists(os.path.join(args.data_path, 'synthetic_5_X.pt')):
@@ -106,7 +107,8 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     # print('Max y_clean: ', torch.max(y_clean))
     # print('Max y_noisy: ', torch.max(y_noisy))
     
-    return X, y_clean, y_noisy
+    args.cnt = len(X)
+    return X, y_clean, y_noisy, T
 
 if __name__ == '__main__':
     import argparse
