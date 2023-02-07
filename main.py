@@ -18,14 +18,14 @@ import numpy as np
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
-CUDA_DEV_NUM = ':3'
+CUDA_DEV_NUM = ':5'
 
 def load_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabalistic_conditional", default='probabalistic_conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='probabilistic_conditional')
     parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing runs outpus", default='runs')
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     X_original, y_clean, y_noisy, T = load_dataset(args)
 
     T = None
-    if args.diffusion_style == 'probabalistic_conditional':
+    if args.diffusion_style == 'probabilistic_conditional':
         print('Estimating Transition Matrix')
         #swap to channels-last nd array for tsfresh
         f = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         T, P, global_dic = get_T_global_min_new(args, ds, T0=torch.eye(args.num_classes), all_point_cnt=args.cnt//5, global_dic={})
         T = torch.from_numpy(T).to(args.device)
         y_noisy = expand_labels(y_noisy, T)
-        y_clean = torch.nn.functional.one_hot(y_clean).int()
+        y_clean = torch.nn.functional.one_hot(y_clean.long()).long()
 
     print('Transition matrix: ', T)
     dataset = torch.utils.data.TensorDataset(X_original, y_noisy)

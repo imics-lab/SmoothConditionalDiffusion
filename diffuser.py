@@ -50,6 +50,24 @@ def load_diffuser(args):
                 seq_length = 128,
                 timesteps = 1000
             ).to(args.device)
+    elif args.diffusion_style == 'probabilistic_conditional':
+        if args.diffusion_model == 'UNet1d':
+            assert args.data_cardinality == '1d', "Data cardinality must match denoising model"
+            model = Unet1D_cls_free(
+                dim = 64,
+                dim_mults = (1, 2, 4, 8),
+                num_classes = args.num_classes,
+                cond_drop_prob = 0.5,
+                channels = 1,
+                one_hot=True
+            ).to(args.device)
+
+        
+            diffusion = GaussianDiffusion1D_cls_free(
+                model,
+                seq_length = 128,
+                timesteps = 1000
+            ).to(args.device)
     else:
         print(f"Diffusion Style choice: {args.diffusion_style} is not supported")
     return model, diffusion
@@ -117,15 +135,49 @@ def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
         }, is_best,args.run_path)
     return model, diffusion
 
+def train_p_conditional(args, model, diffusion, dataloader, logger, optimizer):
+    l = len(dataloader)
+
+    for epoch in range(args.epochs):
+        logging.info(f"Starting epoch {epoch}:")
+        pbar = tqdm(dataloader)
+        for i, (signals, labels) in enumerate(pbar):
+            signals = signals.to(args.device).to(torch.float)
+            labels = labels.to(args.device).to(torch.float)
+            loss = diffusion(signals, classes = labels)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            logger.add_scalar("loss", loss.item(), global_step=epoch * l + i)
+
+        labels = torch.nn.functional.one_hot(torch.randint(0, args.num_classes, (10,)).to(args.device))
+        sampled_signals = diffusion.sample(
+            classes = labels,
+            cond_scale = 3.)
+        sampled_signals.shape # (10, 1, 128)
+        
+        is_best = False
+        
+        save_signals_cls_free(sampled_signals, labels, os.path.join(args.run_path, f"{args.dataset}_{args.diffusion_style}_training_{epoch}.jpg"))
+        save_checkpoint({
+            'epoch': epoch + 1,
+            'model': model,
+            'model_state_dict': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+        }, is_best,args.run_path)
+    return model, diffusion
+
 def train_diffusion(args, model, diffusion, dataloader, logger):
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
     
     if args.diffusion_style == 'unconditional':
         model, diffusion = train_unconditional(args, model, diffusion, dataloader, logger, optimizer)
     elif args.diffusion_style == 'conditional':
-        #y = dataloader.dataset.tensors[1]
-        #print('Biggest label: ', torch.max(y))
         model, diffusion = train_conditional(args, model, diffusion, dataloader, logger, optimizer)
+    elif args.diffusion_style == 'probabilistic_conditional':
+        model, diffusion = train_p_conditional(args, model, diffusion, dataloader, logger, optimizer)
     else:
         print(f'Selected diffusion style: {args.diffusion_style} is not supported.')
         model, diffusion = None, None

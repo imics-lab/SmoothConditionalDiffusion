@@ -558,7 +558,7 @@ def get_T_global_min_new(args, data_set, max_step=501, T0=None, p0=None, lr=0.1,
     p_estimate[2] = torch.zeros(KINDS, KINDS, KINDS)
     # p_estimate_rec = torch.zeros(NumTest, 3)
     for idx in range(NumTest):
-        print(idx, flush=True)
+        #print(idx, flush=True)
         # global
         sample = np.random.choice(range(data_set['feature'].shape[0]), all_point_cnt, replace=False)
         # final_feat, noisy_label = get_feat_clusters(data_set, sample)

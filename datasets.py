@@ -67,7 +67,9 @@ def expand_labels(y, T):
     y_expanded = torch.empty((len(y), num_classes))
     for i, yi in enumerate(y):
         y_expanded[i] = T[yi]
-    return y_expanded.float()
+    #y_expanded = y_expanded*100
+    y_expanded = torch.argsort(y_expanded, descending=True)
+    return y_expanded.long()
 
 def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     if not os.path.exists(args.data_path):

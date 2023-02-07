@@ -313,12 +313,14 @@ class Unet1D_cls_free(nn.Module):
         learned_sinusoidal_cond = False,
         random_fourier_features = False,
         learned_sinusoidal_dim = 16,
+        one_hot = False
     ):
         super().__init__()
 
         # classifier free guidance stuff
 
         self.cond_drop_prob = cond_drop_prob
+        self.one_hot = one_hot
 
         # determine dimensions
 
@@ -430,12 +432,22 @@ class Unet1D_cls_free(nn.Module):
 
         # derive condition, with condition dropout for classifier free guidance        
 
-        classes_emb = self.classes_emb(classes)
+        classes_emb = self.classes_emb(classes.long())
+        if self.one_hot:
+            classes_emb = torch.argmax(classes_emb, 1)
 
         if cond_drop_prob > 0:
             keep_mask = prob_mask_like((batch,), 1 - cond_drop_prob, device = device)
             null_classes_emb = repeat(self.null_classes_emb, 'd -> b d', b = batch)
 
+            # if self.one_hot:
+            #     #random labels to one hot
+            #     classes_emb = torch.nn.functional.one_hot(torch.where(
+            #         rearrange(keep_mask, 'b -> b 1'),
+            #         classes_emb,
+            #         null_classes_emb
+            #     ).long())
+            # else:
             classes_emb = torch.where(
                 rearrange(keep_mask, 'b -> b 1'),
                 classes_emb,
