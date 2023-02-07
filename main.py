@@ -35,6 +35,7 @@ def load_args():
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
     parser.add_argument('--epochs', help="Number of epochs for training", default=1)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=10)
+    parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     args = parser.parse_args()
     return args
 
@@ -72,24 +73,27 @@ if __name__ == '__main__':
     print('Transition matrix: ', T)
 
     X_generated = None
+    y_generated = None
     #Split dataset to train unconditional diffusion
     if args.diffusion_style=='unconditional':
         for i in range(args.num_classes):
             idxs = torch.where(y_noisy==i)[0]
             dataset = torch.utils.data.TensorDataset(X_original[idxs], torch.full((len(idxs),), i))
-            dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
+            dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
 
             model, generator = load_diffuser(args)
             model, generator = train_diffusion(args, model, generator, dataloader, logger)
             #generator_seed = torch.randn_like(X_original)
             if X_generated == None:
+                y_generated = torch.full((len(idxs),), i)
                 X_generated = generator.sample(batch_size=len(idxs))
             else:
+                y_generated = torch.concat([y_generated, torch.full((len(idxs),), i)])
                 X_generated = torch.concat([X_generated, generator.sample(batch_size=len(idxs))])
     #Train with labels for both conditional approaches
     else:
         dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
 
         model, generator = load_diffuser(args)
         model, generator = train_diffusion(args, model, generator, dataloader, logger)
@@ -97,6 +101,21 @@ if __name__ == '__main__':
         y_generated = torch.randint_like(y_clean, args.num_classes).to(args.device)
         X_generated = generator.sample(classes=y_generated)
     print('Shape of new data: ', X_generated.shape)
+    X_generated = X_generated.to(args.device)
+    y_generated = y_generated.to(args.device)
+
+    #Train and test a classifier on JUST original data
     test_clsfr = TestClassifier(args)
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [1.-args.test_split, args.test_split])
+
+    #Train and test a classifier on JUST synthetic data
+    test_clsfr = TestClassifier(args)
+    dataset = torch.utils.data.TensorDataset(X_generated, y_generated)
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [1.-args.test_split, args.test_split])
+
+    #Train and test a classifier on COMBINED data
+    test_clsfr = TestClassifier(args)
+    dataset = torch.utils.data.TensorDataset(torch.concat([X_original, X_generated]), torch.concat([y_noisy, y_generated]))
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [1.-args.test_split, args.test_split])
     
     
