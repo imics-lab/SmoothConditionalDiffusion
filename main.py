@@ -22,7 +22,7 @@ CUDA_DEV_NUM = ':5'
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mitbih')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
     parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='probabilistic_conditional')
@@ -72,3 +72,6 @@ if __name__ == '__main__':
 
     model, generator = load_diffuser(args)
     model, generator = train_diffusion(args, model, generator, dataloader, logger)
+    generator_seed = torch.randn_like(X_original)
+    X_generated = generator.sample(generator_seed)
+    
