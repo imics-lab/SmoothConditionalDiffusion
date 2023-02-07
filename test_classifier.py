@@ -7,7 +7,7 @@
 import torch
 from torch import nn
 import logging
-import tqdm
+from tqdm import tqdm
 
 
 class TestClassifier(nn.Module):
@@ -36,6 +36,7 @@ class TestClassifier(nn.Module):
         for epoch in range(args.epochs):
             logging.info(f"Starting epoch {epoch}:")
             pbar = tqdm(dataloader)
+            total_loss = 0
             for i, (signals, labels) in enumerate(pbar):
                 signals = signals.to(args.device).to(torch.float)
                 labels = labels.to(args.device.to(torch.long))
@@ -45,6 +46,9 @@ class TestClassifier(nn.Module):
                 self.optim.zero_grad()
                 loss.backward()
                 self.optim.step()
+                total_loss += loss.item()
+            logging.info(f'Loss: {total_loss/len(dataloader)}')
+
 
     def test(self, args, dataloader, logger):
         pass

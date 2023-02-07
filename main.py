@@ -16,6 +16,7 @@ from hoc import get_T_global_min_new
 from ts_feature_toolkit import get_features_for_set
 import numpy as np
 from test_classifier import TestClassifier
+import math
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
@@ -101,21 +102,30 @@ if __name__ == '__main__':
         y_generated = torch.randint_like(y_clean, args.num_classes).to(args.device)
         X_generated = generator.sample(classes=y_generated)
     print('Shape of new data: ', X_generated.shape)
-    X_generated = X_generated.to(args.device)
-    y_generated = y_generated.to(args.device)
+    #X_generated = X_generated.to(args.device)
+    #y_generated = y_generated.to(args.device)
 
     #Train and test a classifier on JUST original data
     test_clsfr = TestClassifier(args)
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [1.-args.test_split, args.test_split])
+    dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
+    test_size = math.ceil(args.test_split* len(dataset))
+    train_size = len(dataset) - test_size
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
+    test_clsfr.train(args, dataloader, logger)
 
     #Train and test a classifier on JUST synthetic data
     test_clsfr = TestClassifier(args)
     dataset = torch.utils.data.TensorDataset(X_generated, y_generated)
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [1.-args.test_split, args.test_split])
+    test_size = math.floor(args.test_split* len(dataset))
+    train_size = len(dataset) - test_size
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
     #Train and test a classifier on COMBINED data
     test_clsfr = TestClassifier(args)
     dataset = torch.utils.data.TensorDataset(torch.concat([X_original, X_generated]), torch.concat([y_noisy, y_generated]))
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [1.-args.test_split, args.test_split])
+    test_size = math.floor(args.test_split* len(dataset))
+    train_size = len(dataset) - test_size
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
     
     
