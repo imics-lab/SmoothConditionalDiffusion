@@ -6,7 +6,7 @@
 
 import argparse
 import torch
-from datasets import load_dataset
+from datasets import load_dataset, expand_labels
 from diffuser import load_diffuser, train_diffusion
 from torch.utils.tensorboard import SummaryWriter
 import logging
@@ -14,6 +14,7 @@ import os
 from multiprocessing import cpu_count
 from hoc import get_T_global_min_new
 from ts_feature_toolkit import get_features_for_set
+import numpy as np
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
@@ -49,20 +50,25 @@ if __name__ == '__main__':
 
     X_original, y_clean, y_noisy, T = load_dataset(args)
 
-    dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
-
     T = None
     if args.diffusion_style == 'probabalistic_conditional':
         print('Estimating Transition Matrix')
-        f = get_features_for_set(X_original)
+        #swap to channels-last nd array for tsfresh
+        f = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))
+        #no back to torch
+        f = torch.from_numpy(f).to(args.device)
         ds = {
             'feature' : f,
             'noisy_label' : y_noisy
         }       
         T, P, global_dic = get_T_global_min_new(args, ds, T0=torch.eye(args.num_classes), all_point_cnt=args.cnt//5, global_dic={})
+        T = torch.from_numpy(T).to(args.device)
+        y_noisy = expand_labels(y_noisy, T)
+        y_clean = torch.nn.functional.one_hot(y_clean).int()
 
-    print(T)
+    print('Transition matrix: ', T)
+    dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
 
     model, generator = load_diffuser(args)
     model, generator = train_diffusion(args, model, generator, dataloader, logger)

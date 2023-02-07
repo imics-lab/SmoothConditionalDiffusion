@@ -62,6 +62,12 @@ def get_noisy_labels_for_mit(args, y_clean):
             y_noisy[i] = y_clean[i]
     return y_noisy
 
+def expand_labels(y, T):
+    num_classes = len(T)
+    y_expanded = torch.empty((len(y), num_classes))
+    for i, yi in enumerate(y):
+        y_expanded[i] = T[yi]
+    return y_expanded.float()
 
 def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     if not os.path.exists(args.data_path):

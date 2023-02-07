@@ -192,7 +192,8 @@ def get_features_for_set(X, sample_rate=50, y=None, num_instances=None):
     if num_instances is None:
         num_instances = len(X)
     fet = np.zeros((num_instances, 18))
-    NUM_CORES = os.cpu_count()
+    # NUM_CORES = os.cpu_count()
+    NUM_CORES = 4
     fet = Parallel(n_jobs=NUM_CORES)(delayed(get_features_from_one_signal)(i) for i in X)
     return np.array(fet)
 
