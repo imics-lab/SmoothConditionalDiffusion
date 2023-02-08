@@ -14,7 +14,7 @@ class TestClassifier(nn.Module):
 
     def __init__(self, args) -> None:
         super().__init__()
-        model = nn.Sequential(
+        self.model = nn.Sequential(
             nn.LazyConv1d(64, 8),
             nn.Dropout1d(0.25),
             nn.ReLU(),
@@ -27,10 +27,10 @@ class TestClassifier(nn.Module):
             nn.LazyLinear(32),
             nn.LazyLinear(args.num_classes),
             nn.Softmax()
-        )
+        ).to(args.device)
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optim = torch.optim.Adam(params=model.parameters(), lr=args.lr)
+        self.optim = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
 
     def train(self, args, dataloader, logger):
         for epoch in range(args.epochs):
@@ -39,7 +39,7 @@ class TestClassifier(nn.Module):
             total_loss = 0
             for i, (signals, labels) in enumerate(pbar):
                 signals = signals.to(args.device).to(torch.float)
-                labels = labels.to(args.device.to(torch.long))
+                labels = labels.to(args.device).to(torch.long)
                 p = self.model(signals)
                 loss = self.criterion(p, labels)
 
