@@ -23,7 +23,6 @@ class TestClassifier(nn.Module):
             nn.Dropout1d(0.25),
             nn.ReLU(),
             nn.MaxPool1d(4),
-            nn.AvgPool2d(4),
             nn.LazyLinear(32),
             nn.LazyLinear(args.num_classes),
             nn.Softmax()
@@ -40,7 +39,8 @@ class TestClassifier(nn.Module):
             for i, (signals, labels) in enumerate(pbar):
                 signals = signals.to(args.device).to(torch.float)
                 labels = labels.to(args.device).to(torch.long)
-                p = self.model(signals)
+                labels = nn.functional.one_hot(labels, num_classes=args.num_classes)
+                p = self.model(signals)              
                 loss = self.criterion(p, labels)
 
                 self.optim.zero_grad()

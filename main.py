@@ -20,8 +20,6 @@ import math
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
-CUDA_DEV_NUM = ':5'
-
 def load_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
@@ -34,9 +32,10 @@ def load_args():
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=50)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=10)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
+    parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=5)
     args = parser.parse_args()
     return args
 
@@ -46,7 +45,7 @@ if __name__ == '__main__':
         os.mkdir(args.run_path)
     logger = SummaryWriter(os.path.join("runs", args.run_path))
     if torch.cuda.is_available():
-        args.device = 'cuda' + CUDA_DEV_NUM
+        args.device = 'cuda:' + str(args.dev_num)
     else:
         args.device = 'cpu'
     args.num_workers = cpu_count()
