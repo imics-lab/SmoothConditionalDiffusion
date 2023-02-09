@@ -17,37 +17,50 @@ from ts_feature_toolkit import get_features_for_set
 import numpy as np
 from test_classifier import TestClassifier
 import math
+import json
+
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='unconditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing runs outpus", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
-    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
+    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=16)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=50)
-    parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=10)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
+    parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=1)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
-    parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=5)
+    parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=1)
     args = parser.parse_args()
     return args
+
+results_dic = {
+    'Accuracy on original data' : 0,
+    'Accuracy on synthetic data' : 0,
+    'Accuracy on both' : 0,
+    'FID' : 0,
+    'Label distance' : 0
+}
 
 if __name__ == '__main__':
     args = load_args()
     if not os.path.exists(args.run_path):
         os.mkdir(args.run_path)
+    if not os.path.exists('results'):
+        os.mkdir('results')
     logger = SummaryWriter(os.path.join("runs", args.run_path))
     if torch.cuda.is_available():
         args.device = 'cuda:' + str(args.dev_num)
     else:
         args.device = 'cpu'
+    args.device = 'cpu'
     args.num_workers = cpu_count()
     print("---Experiments on Probilbalistic Conditional Diffusion---")
 
@@ -105,26 +118,26 @@ if __name__ == '__main__':
     #y_generated = y_generated.to(args.device)
 
     #Train and test a classifier on JUST original data
-    test_clsfr = TestClassifier(args)
-    dataset = torch.utils.data.TensorDataset(X_original, y_noisy)
-    test_size = math.ceil(args.test_split* len(dataset))
-    train_size = len(dataset) - test_size
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-    dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
-    test_clsfr.train(args, dataloader, logger)
+    test_clsfr = TestClassifier(args)   
+    acc = test_clsfr.train_and_test_classifier(args, X_original, y_noisy, logger)
+    results_dic['Accuracy on original data'] = acc
 
     #Train and test a classifier on JUST synthetic data
-    test_clsfr = TestClassifier(args)
-    dataset = torch.utils.data.TensorDataset(X_generated, y_generated)
-    test_size = math.floor(args.test_split* len(dataset))
-    train_size = len(dataset) - test_size
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    test_clsfr = TestClassifier(args)  
+    acc = test_clsfr.train_and_test_classifier(args, X_generated, y_generated, logger)
+    results_dic['Accuracy on synthetic data'] = acc
 
     #Train and test a classifier on COMBINED data
     test_clsfr = TestClassifier(args)
-    dataset = torch.utils.data.TensorDataset(torch.concat([X_original, X_generated]), torch.concat([y_noisy, y_generated]))
-    test_size = math.floor(args.test_split* len(dataset))
-    train_size = len(dataset) - test_size
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    acc = test_clsfr.train_and_test_classifier(args, 
+            torch.concat((X_original, X_generated)), torch.concat((y_noisy, y_generated)), 
+            logger
+    )
+    results_dic['Accuracy on both'] = acc
+
+    #Save the results
+    print(results_dic)
+    with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
+        f.write(json.dumps(results_dic))
     
     

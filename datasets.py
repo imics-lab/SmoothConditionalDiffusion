@@ -11,10 +11,8 @@ from gen_ts_data import generate_signal_as_tensor
 import zipfile
 from support.MITBIH import mitbih_allClass
 
-def get_noisy_synthetic_dataset(args, num_classes):
+def get_noisy_synthetic_dataset(args, num_classes, set_length=5001, num_channels=1):
     SIGNAL_LENGTH = 128
-    SET_LENGTH = 5001
-    NUM_CHANNELS = 1
     random.seed(1899)
     sig_dict = {
         'avg_pattern_length' : [random.randint(5, 15) for _ in range(num_classes)],
@@ -23,10 +21,10 @@ def get_noisy_synthetic_dataset(args, num_classes):
         'variance_pattern_length' : [random.randint(1, 20) for _ in range(num_classes)],
         'variance_amplitude' : [random.randint(1, 5) for _ in range(num_classes)],
     }
-    y_clean = torch.randint(high=num_classes-1, size=(SET_LENGTH,)).int()
-    y_noisy = torch.zeros(SET_LENGTH).int()
-    X = torch.empty(SET_LENGTH, NUM_CHANNELS, SIGNAL_LENGTH)
-    for i in range(SET_LENGTH):
+    y_clean = torch.randint(high=num_classes, size=(set_length,)).int()
+    y_noisy = torch.zeros(set_length).int()
+    X = torch.empty(set_length, num_channels, SIGNAL_LENGTH)
+    for i in range(set_length):
         X[i, 0, :] = generate_signal_as_tensor(
             SIGNAL_LENGTH,
             sig_dict['avg_pattern_length'][y_clean[i]],
@@ -41,7 +39,8 @@ def get_noisy_synthetic_dataset(args, num_classes):
         else:
             y_noisy[i] = y_clean[i]
         
-
+    y_clean = y_clean.long()
+    y_noisy = y_noisy.long()
     return X, y_clean, y_noisy
 
 def download_mit_bih_dataset(args):
@@ -109,6 +108,9 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
         print('MIT BIH y_clean shape: ', y_clean.shape)
         y_noisy = get_noisy_labels_for_mit(args, y_clean)
         y_noisy = y_noisy.int()
+    elif args.dataset == 'mini_synthetic':
+        X, y_clean, y_noisy = get_noisy_synthetic_dataset(args, 2, 101)
+        args.num_classes = 2
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
 
