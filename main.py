@@ -19,23 +19,24 @@ from test_classifier import TestClassifier
 import math
 import json
 
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mitbih')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='unconditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
-    parser.add_argument('--run_path', help="Directory for storing runs outpus", default='runs')
+    parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
-    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=16)
+    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=10)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
     parser.add_argument('--epochs', help="Number of epochs for training", default=1)
-    parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=1)
+    parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=1)
     args = parser.parse_args()
@@ -60,7 +61,7 @@ if __name__ == '__main__':
         args.device = 'cuda:' + str(args.dev_num)
     else:
         args.device = 'cpu'
-    args.device = 'cpu'
+    #args.device = 'cpu'
     args.num_workers = cpu_count()
     print("---Experiments on Probilbalistic Conditional Diffusion---")
 
@@ -90,6 +91,7 @@ if __name__ == '__main__':
     #Split dataset to train unconditional diffusion
     if args.diffusion_style=='unconditional':
         for i in range(args.num_classes):
+            logging.info(f"Generating Samples of Class {i}:")
             idxs = torch.where(y_noisy==i)[0]
             dataset = torch.utils.data.TensorDataset(X_original[idxs], torch.full((len(idxs),), i))
             dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
@@ -111,11 +113,13 @@ if __name__ == '__main__':
         model, generator = load_diffuser(args)
         model, generator = train_diffusion(args, model, generator, dataloader, logger)
         #generator_seed = torch.randn_like(X_original)
-        y_generated = torch.randint_like(y_clean, args.num_classes).to(args.device)
-        X_generated = generator.sample(classes=y_generated)
+        y_generated = torch.randint_like(y_clean, args.num_classes)
+        X_generated = generator.sample(classes=y_generated.to(args.device))
     print('Shape of new data: ', X_generated.shape)
-    #X_generated = X_generated.to(args.device)
-    #y_generated = y_generated.to(args.device)
+
+    #Convert labels to indexes if necesary
+    if args.diffusion_style == 'probabilistic_conditional':
+        pass
 
     #Train and test a classifier on JUST original data
     test_clsfr = TestClassifier(args)   

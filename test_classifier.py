@@ -43,7 +43,10 @@ class TestClassifier(nn.Module):
                 signals = signals.to(args.device).to(torch.float)
                 labels = labels.to(args.device).to(torch.long)
                 labels = nn.functional.one_hot(labels, num_classes=args.num_classes).float()
-                pred = self.model(signals)              
+                pred = self.model(signals)
+                if args.diffusion_style == 'probabilistic_conditional':
+                    pred = torch.argmax(pred, dim=-1)
+                    labels = torch.argmax(labels, dim=-1)              
                 loss = self.criterion(pred, labels)
 
                 self.optim.zero_grad()
@@ -62,15 +65,17 @@ class TestClassifier(nn.Module):
                 y = y.long().to(args.device)
                 pred = self.model(X)
                 pred = torch.argmax(pred, dim=-1)
+                if args.diffusion_style == 'probabilistic_diffusion':
+                    y = torch.argmax(y, dim=-1)
                 if all_preds == None:
                     all_preds = pred
                 else:
                     all_preds = torch.concat((all_preds, pred))
 
                 if all_true == None:
-                    all_true = pred
+                    all_true = y
                 else:
-                    all_true = torch.concat((all_true, pred))
+                    all_true = torch.concat((all_true, y))
         if args.device == 'cpu':
             return accuracy_score(all_true.detach().numpy(), all_preds.detach().numpy())
         else:
@@ -89,8 +94,8 @@ class TestClassifier(nn.Module):
 
 
 if __name__ == '__main__':
-    X = torch.randn((100, 1, 128))
-    y = torch.randint(low=0, high=2, size=(100,))
+    X = torch.randn((1000, 1, 128))
+    y = torch.randint(low=0, high=2, size=(1000,))
     import argparse
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
@@ -100,11 +105,15 @@ if __name__ == '__main__':
     args.num_workers = 8
     args.batch_size = 32
     args.epochs = 5
+    args.test_split = 0.2
 
     c = TestClassifier(args)
-    dataset = torch.utils.data.TensorDataset(X, y)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
-    c.train(args, dataloader)
-    p = c.test(args, dataloader)
-    print('predicted labels: ', p)
+    # dataset = torch.utils.data.TensorDataset(X, y)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
+    # c.train(args, dataloader)
+    # p = c.test(args, dataloader)
+    # print('predicted labels: ', p)
+
+    acc = c.train_and_test_classifier(args, X, y)
+    print('Acc: ', acc)
 

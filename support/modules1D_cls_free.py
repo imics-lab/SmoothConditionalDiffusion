@@ -731,7 +731,7 @@ class GaussianDiffusion1D_cls_free(nn.Module):
     def sample(self, classes, cond_scale = 3.):
         batch_size, seq_length, channels = classes.shape[0], self.seq_length, self.channels
         sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
-        return sample_fn(classes, (batch_size, channels, seq_length), cond_scale)
+        return sample_fn(classes, (batch_size, channels, seq_length), cond_scale).cpu()
 
     @torch.no_grad()
     def interpolate(self, x1, x2, t = None, lam = 0.5):

@@ -33,7 +33,7 @@ def load_diffuser(args):
             ).to(args.device)
         else:
             print(f"Denoising Model choice: {args.diffusion_model} is not supported")
-    if args.diffusion_style == 'conditional':
+    elif args.diffusion_style == 'conditional':
         if args.diffusion_model == 'UNet1d':
             assert args.data_cardinality == '1d', "Data cardinality must match denoising model"
             model = Unet1D_cls_free(
@@ -118,11 +118,11 @@ def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
             
             logger.add_scalar("loss", loss.item(), global_step=epoch * l + i)
 
-        labels = torch.randint(0, args.num_classes, (10,)).to(args.device)
+        labels = torch.randint(0, args.num_classes, (args.training_samples,)).to(args.device)
         sampled_signals = diffusion.sample(
             classes = labels,
             cond_scale = 3.)
-        sampled_signals.shape # (10, 1, 128)
+        sampled_signals.shape # (args.training_samples, 1, 128)
         
         is_best = False
         
