@@ -16,7 +16,6 @@ from hoc import get_T_global_min_new
 from ts_feature_toolkit import get_features_for_set
 import numpy as np
 from test_classifier import TestClassifier
-import math
 import json
 import umap
 from matplotlib import pyplot as plt
@@ -27,17 +26,17 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mitbih')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='unconditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='probabilistic_conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=1)
@@ -131,9 +130,13 @@ if __name__ == '__main__':
 
     #Train and test a classifier on COMBINED data
     test_clsfr = TestClassifier(args)
-    acc = test_clsfr.train_and_test_classifier(args, 
-            torch.concat((X_original, X_generated)), torch.concat((y_noisy, y_generated)), 
-            logger
+    acc = test_clsfr.train_and_test_classifier(
+            args, 
+            X_original, 
+            y_noisy,  
+            logger,
+            X_generated,
+            y_generated
     )
     results_dic['Accuracy on both'] = acc
 

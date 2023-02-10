@@ -45,8 +45,8 @@ class TestClassifier(nn.Module):
                 labels = nn.functional.one_hot(labels, num_classes=args.num_classes).float()
                 pred = self.model(signals)
                 if args.diffusion_style == 'probabilistic_conditional':
-                    pred = torch.argmax(pred, dim=-1).long()
-                    labels = torch.argmax(labels, dim=-1).long()              
+                    #pred = torch.argmax(pred, dim=-1).long()
+                    labels = torch.argmax(labels, dim=-1).float()              
                 loss = self.criterion(pred, labels)
 
                 self.optim.zero_grad()
@@ -65,7 +65,7 @@ class TestClassifier(nn.Module):
                 y = y.long().to(args.device)
                 pred = self.model(X)
                 pred = torch.argmax(pred, dim=-1)
-                if args.diffusion_style == 'probabilistic_diffusion':
+                if args.diffusion_style == 'probabilistic_conditional':
                     y = torch.argmax(y, dim=-1)
                 if all_preds == None:
                     all_preds = pred
@@ -81,31 +81,39 @@ class TestClassifier(nn.Module):
         else:
             return accuracy_score(all_true.cpu().detach().numpy(), all_preds.cpu().detach().numpy())
 
-    def train_and_test_classifier(self, args, X, y, logger=None):
-        dataset = torch.utils.data.TensorDataset(X, y)
-        test_size = math.ceil(args.test_split* len(dataset))
-        train_size = len(dataset) - test_size
-        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-        dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
+    def train_and_test_classifier(self, args, X, y, logger=None, X_new = None, y_new = None):
+        if X_new == None or y_new == None:
+            dataset = torch.utils.data.TensorDataset(X, y)
+            test_size = math.ceil(args.test_split* len(dataset))
+            train_size = len(dataset) - test_size
+            train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+        else:
+            test_len = len(X)//5
+            X_test, X_train = torch.split(X, [test_len, len(X)-test_len])
+            y_test, y_train = torch.split(y, [test_len, len(X)-test_len])
+            train_dataset = torch.utils.data.TensorDataset(torch.concat((X_train, X_new)), torch.concat((y_train, y_new)))
+            test_dataset = torch.utils.data.TensorDataset(X_test, y_test)
+        dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
         self.train(args, dataloader, logger)
-        dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
+        dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
         acc = self.test(args, dataloader, logger)
         return acc
 
 
 if __name__ == '__main__':
     X = torch.randn((1000, 1, 128))
-    y = torch.randint(low=0, high=2, size=(1000,))
+    y = torch.randint(low=0, high=2, size=(1000,3))
     import argparse
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args.device = 'cuda'
-    args.num_classes = 2
+    args.num_classes = 3
     args.lr = 0.001
     args.num_workers = 8
     args.batch_size = 32
     args.epochs = 5
     args.test_split = 0.2
+    args.diffusion_style = 'probabilistic_conditional'
 
     c = TestClassifier(args)
     # dataset = torch.utils.data.TensorDataset(X, y)
