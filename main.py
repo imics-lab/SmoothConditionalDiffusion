@@ -18,8 +18,10 @@ import numpy as np
 from test_classifier import TestClassifier
 import math
 import json
+import umap
+from matplotlib import pyplot as plt
 
-torch.multiprocessing.set_sharing_strategy('file_system')
+#torch.multiprocessing.set_sharing_strategy('file_system')
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
@@ -33,9 +35,9 @@ def load_args():
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
-    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=10)
+    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=1)
@@ -117,10 +119,6 @@ if __name__ == '__main__':
         X_generated = generator.sample(classes=y_generated.to(args.device))
     print('Shape of new data: ', X_generated.shape)
 
-    #Convert labels to indexes if necesary
-    if args.diffusion_style == 'probabilistic_conditional':
-        pass
-
     #Train and test a classifier on JUST original data
     test_clsfr = TestClassifier(args)   
     acc = test_clsfr.train_and_test_classifier(args, X_original, y_noisy, logger)
@@ -143,5 +141,25 @@ if __name__ == '__main__':
     print(results_dic)
     with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
         f.write(json.dumps(results_dic))
+
+    #Print umaps of original vs. generated data
+    f_original = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))
+    f_synthetic = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))
+    reducer = umap.UMAP(n_neighbors=15, n_components=2)
+    embedding_orig = reducer.fit_transform(f_original)
+    embedding_syn = reducer.fit_transform(f_synthetic)
+
+    plt.figure()
+    plt.scatter(embedding_orig[:,0], embedding_orig[:,1], c='blue')
+    plt.scatter(embedding_syn[:,0], embedding_syn[:,1], c='maroon')
+    plt.savefig(os.path.join('results', f'{args.dataset}_{args.diffusion_style}.pdf'))
+
+    #Preserve the generated tensors
+    torch.save(X_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_X_generated.pt'))
+    torch.save(y_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_y_generated.pt'))
+    torch.save(model.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_denoiser.pt'))
+    torch.save(generator.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_generator.pt'))
+
+
     
     

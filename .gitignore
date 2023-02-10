@@ -4,4 +4,4 @@
 *.jpg
 *.csv
 events.out.tfevents*
-HOC
+results/*

@@ -118,7 +118,8 @@ def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
             
             logger.add_scalar("loss", loss.item(), global_step=epoch * l + i)
 
-        labels = torch.randint(0, args.num_classes, (args.training_samples,)).to(args.device)
+        #labels = torch.randint(0, args.num_classes, (args.training_samples,)).to(args.device)
+        labels = torch.randint(0, args.num_classes, (10,)).to(args.device)
         sampled_signals = diffusion.sample(
             classes = labels,
             cond_scale = 3.)

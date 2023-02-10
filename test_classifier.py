@@ -45,8 +45,8 @@ class TestClassifier(nn.Module):
                 labels = nn.functional.one_hot(labels, num_classes=args.num_classes).float()
                 pred = self.model(signals)
                 if args.diffusion_style == 'probabilistic_conditional':
-                    pred = torch.argmax(pred, dim=-1)
-                    labels = torch.argmax(labels, dim=-1)              
+                    pred = torch.argmax(pred, dim=-1).long()
+                    labels = torch.argmax(labels, dim=-1).long()              
                 loss = self.criterion(pred, labels)
 
                 self.optim.zero_grad()
