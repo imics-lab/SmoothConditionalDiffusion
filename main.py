@@ -20,13 +20,13 @@ import json
 import umap
 from matplotlib import pyplot as plt
 
-#torch.multiprocessing.set_sharing_strategy('file_system')
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mitbih')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
     parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='probabilistic_conditional')
@@ -36,7 +36,7 @@ def load_args():
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=1)
@@ -153,8 +153,8 @@ if __name__ == '__main__':
     embedding_syn = reducer.fit_transform(f_synthetic)
 
     plt.figure()
-    plt.scatter(embedding_orig[:,0], embedding_orig[:,1], c='blue')
-    plt.scatter(embedding_syn[:,0], embedding_syn[:,1], c='maroon')
+    plt.scatter(embedding_orig[:,0], embedding_orig[:,1], c='blue', marker=',')
+    plt.scatter(embedding_syn[:,0], embedding_syn[:,1], c='maroon', marker=',')
     plt.savefig(os.path.join('results', f'{args.dataset}_{args.diffusion_style}.pdf'))
 
     #Preserve the generated tensors
