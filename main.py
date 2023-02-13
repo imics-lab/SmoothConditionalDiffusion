@@ -36,7 +36,7 @@ def load_args():
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=2)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         T, P, global_dic = get_T_global_min_new(args, ds, T0=torch.eye(args.num_classes), all_point_cnt=args.cnt//5, global_dic={})
         T = torch.from_numpy(T).to(args.device)
         y_noisy = expand_labels(y_noisy, T)
-        y_clean = torch.nn.functional.one_hot(y_clean.long()).long()
+        y_clean = torch.nn.functional.one_hot(y_clean.long(), num_classes=args.num_classes).long()
 
     print('Transition matrix: ', T)
 
@@ -114,7 +114,10 @@ if __name__ == '__main__':
         model, generator = load_diffuser(args)
         model, generator = train_diffusion(args, model, generator, dataloader, logger)
         #generator_seed = torch.randn_like(X_original)
-        y_generated = torch.randint_like(y_clean, args.num_classes)
+        if args.diffusion_style=='conditional':
+            y_generated = torch.randint_like(y_clean, args.num_classes)
+        elif args.diffusion_style=='probabilistic_conditional':
+            y_generated = torch.randint(args.num_classes, (len(y_clean),))
         X_generated = generator.sample(classes=y_generated.to(args.device))
     print('Shape of new data: ', X_generated.shape)
 
