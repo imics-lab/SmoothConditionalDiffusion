@@ -34,9 +34,9 @@ def load_args():
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
-    parser.add_argument('--batch_size', help="Instance to train on per iteration", default=32)
+    parser.add_argument('--batch_size', help="Instances to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=2)
@@ -118,6 +118,7 @@ if __name__ == '__main__':
             y_generated = torch.randint_like(y_clean, args.num_classes)
         elif args.diffusion_style=='probabilistic_conditional':
             y_generated = torch.randint(args.num_classes, (len(y_clean),))
+            y_generated = torch.mul(torch.nn.functional.one_hot(y_generated, num_classes=args.num_classes), args.num_classes-1)
         X_generated = generator.sample(classes=y_generated.to(args.device))
     print('Shape of new data: ', X_generated.shape)
 
