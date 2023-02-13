@@ -4,6 +4,13 @@
 # Date:         03 Feb, 2023            #
 #########################################
 
+#Incoming datasets:
+#   Apnea ECG- https://www.kaggle.com/datasets/ecerulm/apneaecg
+#   PTB diagnostic ECG- https://www.kaggle.com/datasets/openmark/ptb-diagnostic-ecg-database
+#   SWELL- https://www.kaggle.com/datasets/qiriro/swell-heart-rate-variability-hrv
+#   Electromyography dataset- https://www.kaggle.com/datasets/nccvector/electromyography-emg-dataset
+#   PSG apnea? Yeah, not a bad idea
+
 import torch
 import os
 import random
