@@ -303,5 +303,14 @@ class unimib_load_dataset(Dataset):
                 return self.one_class_test_data[idx], self.one_class_test_labels[idx]
             else:
                 return self.x_test[idx], self.y_test[idx]
+
+if __name__ == '__main__':
+    ds = unimib_load_dataset(
+        incl_xyz_accel=True,
+        incl_rms_accel=False,
+        single_class = False
+    )
+    print(type(ds))
+    print(len(ds))
             
     

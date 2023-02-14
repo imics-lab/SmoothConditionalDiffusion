@@ -5,3 +5,5 @@
 *.csv
 events.out.tfevents*
 results/*
+UniMiB-SHAR/*
+UniMiB-SHAR.zip
