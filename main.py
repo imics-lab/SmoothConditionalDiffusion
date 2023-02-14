@@ -27,10 +27,10 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='unimib')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='unconditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
@@ -40,7 +40,8 @@ def load_args():
     parser.add_argument('--epochs', help="Number of epochs for training", default=1)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
-    parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=2)
+    parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=4)
+    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=1000)
     args = parser.parse_args()
     return args
 

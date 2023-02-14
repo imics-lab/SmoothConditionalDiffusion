@@ -28,7 +28,7 @@ def load_diffuser(args):
             diffusion = GaussianDiffusion1D(
                 model,
                 seq_length = args.seq_length,
-                timesteps = 1000,
+                timesteps = args.time_steps,
                 objective = 'pred_v'
             ).to(args.device)
         else:
@@ -48,7 +48,7 @@ def load_diffuser(args):
             diffusion = GaussianDiffusion1D_cls_free(
                 model,
                 seq_length = args.seq_length,
-                timesteps = 1000
+                timesteps = args.time_steps
             ).to(args.device)
     elif args.diffusion_style == 'probabilistic_conditional':
         if args.diffusion_model == 'UNet1d':
@@ -66,7 +66,7 @@ def load_diffuser(args):
             diffusion = GaussianDiffusion1D_cls_free(
                 model,
                 seq_length = args.seq_length,
-                timesteps = 1000
+                timesteps = args.time_steps
             ).to(args.device)
     else:
         print(f"Diffusion Style choice: {args.diffusion_style} is not supported")
