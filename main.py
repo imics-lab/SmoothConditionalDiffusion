@@ -19,6 +19,7 @@ from test_classifier import TestClassifier
 import json
 import umap
 from matplotlib import pyplot as plt
+from datetime import datetime
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -26,17 +27,17 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='unimib')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='probabilistic_conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instances to train on per iteration", default=32)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=2)
@@ -48,7 +49,8 @@ results_dic = {
     'Accuracy on synthetic data' : 0,
     'Accuracy on both' : 0,
     'FID' : 0,
-    'Label distance' : 0
+    'Label distance' : 0,
+    'Time' : None
 }
 
 if __name__ == '__main__':
@@ -86,6 +88,7 @@ if __name__ == '__main__':
         y_clean = torch.nn.functional.one_hot(y_clean.long(), num_classes=args.num_classes).long()
 
     print('Transition matrix: ', T)
+    args.seq_length = X_original.shape[2]
 
     X_generated = None
     y_generated = None
@@ -145,6 +148,7 @@ if __name__ == '__main__':
     results_dic['Accuracy on both'] = acc
 
     #Save the results
+    results_dic['Time'] = datetime.now()
     print(results_dic)
     with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
         f.write(json.dumps(results_dic))

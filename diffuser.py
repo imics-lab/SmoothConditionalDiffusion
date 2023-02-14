@@ -27,7 +27,7 @@ def load_diffuser(args):
             # seq_length must be able to divided by dim_mults
             diffusion = GaussianDiffusion1D(
                 model,
-                seq_length = 128,
+                seq_length = args.seq_length,
                 timesteps = 1000,
                 objective = 'pred_v'
             ).to(args.device)
@@ -47,7 +47,7 @@ def load_diffuser(args):
         
             diffusion = GaussianDiffusion1D_cls_free(
                 model,
-                seq_length = 128,
+                seq_length = args.seq_length,
                 timesteps = 1000
             ).to(args.device)
     elif args.diffusion_style == 'probabilistic_conditional':
@@ -65,7 +65,7 @@ def load_diffuser(args):
         
             diffusion = GaussianDiffusion1D_cls_free(
                 model,
-                seq_length = 128,
+                seq_length = args.seq_length,
                 timesteps = 1000
             ).to(args.device)
     else:

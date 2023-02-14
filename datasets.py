@@ -10,6 +10,8 @@
 #   SWELL- https://www.kaggle.com/datasets/qiriro/swell-heart-rate-variability-hrv
 #   Electromyography dataset- https://www.kaggle.com/datasets/nccvector/electromyography-emg-dataset
 #   PSG apnea? Yeah, not a bad idea
+#   HAR from Lee
+#   Sleep EEG
 
 import torch
 import os
@@ -17,6 +19,7 @@ import random
 from gen_ts_data import generate_signal_as_tensor
 import zipfile
 from support.MITBIH import mitbih_allClass
+from support.har_dataloader import unimib_load_dataset
 
 def get_noisy_synthetic_dataset(args, num_classes, set_length=5001, num_channels=1):
     SIGNAL_LENGTH = 128
@@ -58,7 +61,7 @@ def download_mit_bih_dataset(args):
         zip_ref.extractall(args.data_path)
     os.system(f'rm {args.data_path}/heartbeat.zip')
 
-def get_noisy_labels_for_mit(args, y_clean):
+def get_noisy_labels_from_clean(args, y_clean):
     y_noisy = torch.zeros_like(y_clean)
     for i, y in enumerate(y_clean):
         if random.random() <= args.mislab_rate:
@@ -76,6 +79,18 @@ def expand_labels(y, T):
     #y_expanded = y_expanded*100
     y_expanded = torch.argsort(y_expanded, descending=True)
     return y_expanded.long()
+
+def get_unimib(args):
+    uds = unimib_load_dataset(
+        incl_xyz_accel=False,
+        incl_rms_accel=True,
+        single_class = False
+    )
+    X, y = uds[:]
+    # X = torch.squeeze(torch.from_numpy(X))
+    X = torch.squeeze(torch.from_numpy(X), dim=2)
+    y = torch.argmax(torch.from_numpy(y), dim=-1).long()
+    return X, y
 
 def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
     if not os.path.exists(args.data_path):
@@ -113,11 +128,15 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
         y_clean = torch.Tensor(y_clean).int()
         print('MIT BIH X shape: ', X.shape)
         print('MIT BIH y_clean shape: ', y_clean.shape)
-        y_noisy = get_noisy_labels_for_mit(args, y_clean)
+        y_noisy = get_noisy_labels_from_clean(args, y_clean)
         y_noisy = y_noisy.int()
     elif args.dataset == 'mini_synthetic':
         X, y_clean, y_noisy = get_noisy_synthetic_dataset(args, 2, 101)
         args.num_classes = 2
+    elif args.dataset == 'unimib':
+        args.num_classes = 9
+        X, y_clean = get_unimib(args)
+        y_noisy = get_noisy_labels_from_clean(args, y_clean)
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
 
@@ -133,9 +152,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args .data_path = 'data'
-    args.dataset = 'mitbih'
+    args.dataset = 'unimib'
     args.mislab_rate = 0.05
-    X, y_clean, y_noisy = load_dataset(args)
+    X, y_clean, y_noisy, _ = load_dataset(args)
+    print('X shape: ', X.shape)
+    print('y_clean shape: ', y_clean.shape)
+    print('y_noisy shape: ', y_noisy.shape)
     print('Number of mislabeled instances: ', np.count_nonzero(y_clean != y_noisy))
     print('Measured mislabeling rate: ', np.count_nonzero(y_clean != y_noisy)/len(y_clean))
     print('Intended mislabeling rate: ', args.mislab_rate)
