@@ -35,9 +35,9 @@ def load_args():
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
-    parser.add_argument('--batch_size', help="Instances to train on per iteration", default=32)
+    parser.add_argument('--batch_size', help="Instances to train on per iteration", default=64)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=1)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=4)
@@ -51,7 +51,8 @@ results_dic = {
     'Accuracy on both' : 0,
     'FID' : 0,
     'Label distance' : 0,
-    'Time' : None
+    'Time' : None,
+    'Time_steps' : None
 }
 
 if __name__ == '__main__':
@@ -149,7 +150,8 @@ if __name__ == '__main__':
     results_dic['Accuracy on both'] = acc
 
     #Save the results
-    results_dic['Time'] = datetime.now()
+    results_dic['Time'] = str(datetime.now())
+    results_dic['Time_steps'] = args.time_steps
     print(results_dic)
     with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
         f.write(json.dumps(results_dic))

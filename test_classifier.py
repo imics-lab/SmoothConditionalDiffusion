@@ -82,13 +82,14 @@ class TestClassifier(nn.Module):
             return accuracy_score(all_true.cpu().detach().numpy(), all_preds.cpu().detach().numpy())
 
     def train_and_test_classifier(self, args, X, y, logger=None, X_new = None, y_new = None):
+        dataset = None
         if X_new == None or y_new == None:
             dataset = torch.utils.data.TensorDataset(X, y)
             test_size = math.ceil(args.test_split* len(dataset))
             train_size = len(dataset) - test_size
             train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
         else:
-            test_len = len(X)//5
+            test_len = X.shape[0]
             X_test, X_train = torch.split(X, [test_len, len(X)-test_len])
             y_test, y_train = torch.split(y, [test_len, len(X)-test_len])
             train_dataset = torch.utils.data.TensorDataset(torch.concat((X_train, X_new)), torch.concat((y_train, y_new)))
