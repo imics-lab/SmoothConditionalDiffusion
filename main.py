@@ -20,6 +20,7 @@ import json
 import umap
 from matplotlib import pyplot as plt
 from datetime import datetime
+from get_fid_encoder import get_pretrained_encoder, get_fid_from_features
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -30,18 +31,18 @@ def load_args():
     parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='unconditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instances to train on per iteration", default=64)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=150)
+    parser.add_argument('--epochs', help="Number of epochs for training", default=5)
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=4)
-    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=1000)
+    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=10)
     args = parser.parse_args()
     return args
 
@@ -149,13 +150,6 @@ if __name__ == '__main__':
     )
     results_dic['Accuracy on both'] = acc
 
-    #Save the results
-    results_dic['Time'] = str(datetime.now())
-    results_dic['Time_steps'] = args.time_steps
-    print(results_dic)
-    with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
-        f.write(json.dumps(results_dic))
-
     #Print umaps of original vs. generated data
     f_original = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))
     f_synthetic = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))
@@ -173,6 +167,21 @@ if __name__ == '__main__':
     torch.save(y_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_y_generated.pt'))
     torch.save(model.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_denoiser.pt'))
     torch.save(generator.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_generator.pt'))
+
+    #Learn features with a the pre-trained encoder
+    wave2vec = get_pretrained_encoder(args)
+    f_original = [wave2vec( X_original[i,:,:])['input_values'] for i in range(X_original.shape[0])]
+    f_original = torch.Tensor(f_original).float()
+    f_synthetic = [wave2vec( X_generated[i,:,:])['input_values'] for i in range(X_generated.shape[0])]
+    f_synthetic = torch.Tensor(f_synthetic).float()
+    results_dic['Time_steps'] = get_fid_from_features(f_original, f_synthetic)
+
+    #Save the results
+    results_dic['Time'] = str(datetime.now())
+    results_dic['Time_steps'] = args.time_steps
+    print(results_dic)
+    with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
+        f.write(json.dumps(results_dic))
 
 
     
