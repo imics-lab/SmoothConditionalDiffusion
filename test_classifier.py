@@ -89,7 +89,7 @@ class TestClassifier(nn.Module):
             train_size = len(dataset) - test_size
             train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
         else:
-            test_len = X.shape[0]
+            test_len = math.ceil(X.shape[0]*args.test_split)
             X_test, X_train = torch.split(X, [test_len, len(X)-test_len])
             y_test, y_train = torch.split(y, [test_len, len(X)-test_len])
             train_dataset = torch.utils.data.TensorDataset(torch.concat((X_train, X_new)), torch.concat((y_train, y_new)))
