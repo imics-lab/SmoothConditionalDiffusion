@@ -28,10 +28,10 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='unimib')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='unconditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')

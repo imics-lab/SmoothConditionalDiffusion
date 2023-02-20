@@ -19,7 +19,7 @@ def get_fid_from_features(f_original, f_synthetic):
     sig_1 = torch.std(f_original)
     sig_2 = torch.std(f_synthetic)
     # return abs(mu_1 - mu_2)**2 + torch.trace(sig_1 + sig_2 - 2*torch.sqrt(torch.sqrt(sig_1)*sig_2*torch.sqrt(sig_1)))
-    return abs(mu_1 - mu_2)**2 + (sig_1 + sig_2 - 2*torch.sqrt(torch.sqrt(sig_1)*sig_2*torch.sqrt(sig_1)))
+    return (abs(mu_1 - mu_2)**2 + (sig_1 + sig_2 - 2*torch.sqrt(torch.sqrt(sig_1)*sig_2*torch.sqrt(sig_1)))).item()
 
 
 

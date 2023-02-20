@@ -20,6 +20,7 @@ from gen_ts_data import generate_signal_as_tensor
 import zipfile
 from support.MITBIH import mitbih_allClass
 from support.har_dataloader import unimib_load_dataset
+from scipy.signal import resample
 
 def get_noisy_synthetic_dataset(args, num_classes, set_length=5001, num_channels=1):
     SIGNAL_LENGTH = 128
@@ -89,6 +90,7 @@ def get_unimib(args):
     X, y = uds[:]
     # X = torch.squeeze(torch.from_numpy(X))
     X = torch.squeeze(torch.from_numpy(X), dim=2)
+    X = torch.from_numpy(resample(X.numpy(), 128, axis=2)).float()
     y = torch.argmax(torch.from_numpy(y), dim=-1).long()
     return X, y
 
