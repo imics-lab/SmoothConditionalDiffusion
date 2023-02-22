@@ -52,7 +52,8 @@ def save_signals(signals, path, **kwargs):
 def save_signals_cls_free(signals, labels, path, **kwargs):
     signals = signals.to('cpu').detach().numpy()
     if labels.ndim > 1:
-        labels = torch.nn.functional.one_hot(torch.clone(labels).long())
+        #labels = torch.nn.functional.one_hot(torch.clone(labels).long())
+        labels = torch.argmax(torch.clone(labels), dim=-1)
     fig, axs = plt.subplots(2, 5, figsize=(20,5))
     for i in range(2):
         for j in range(5):
