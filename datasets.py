@@ -83,9 +83,16 @@ def expand_labels(y, T):
 
 def soften_labels(y : torch.Tensor, alpha : float):
     assert y.ndim == 1, "Labels must be catagorical to soften"
+    
     num_labels = torch.max(y)+1
-    counts = [torch.count_nonzer(y==i) for i in range(0, num_labels)]
+    counts = [torch.count_nonzero(y==i) for i in range(0, num_labels)]
+    counts = [c/len(y) for c in counts]
+    print(counts)
     new_y = torch.zeros((len(y), num_labels))
+    for i, l in enumerate(y):
+        new_y[i,:] = torch.Tensor([alpha*c for c in counts])
+        new_y[i,l] = 1.-sum([alpha*counts[i] if i!=l else 0 for i in range(num_labels) ])
+    return new_y
 
 
 def get_unimib(args):
@@ -161,7 +168,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args .data_path = 'data'
-    args.dataset = 'mini_synthetic'
+    args.dataset = 'unimib'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy, _ = load_dataset(args)
     print('X shape: ', X.shape)
