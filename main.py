@@ -43,6 +43,7 @@ def load_args():
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=4)
     parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=1000) #1000
+    parser.add_argument('--smoothing_alpha', help="Weight to give to T in computing training labels.", default=0.1) #1000
     args = parser.parse_args()
     return args
 
@@ -153,9 +154,9 @@ if __name__ == '__main__':
     #Save the results
     results_dic['Time'] = str(datetime.now())
     results_dic['Time_steps'] = args.time_steps
-    print(results_dic)
-    with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
-        f.write(json.dumps(results_dic))
+    # print(results_dic)
+    # with open(f'results/{args.diffusion_style}_{args.diffusion_model}_{args.dataset}_accuracies.txt', 'w') as f:
+    #     f.write(json.dumps(results_dic))
 
     #Print umaps of original vs. generated data
     f_original = get_features_for_set(np.array(torch.permute(X_original, (0, 2, 1)).cpu().detach()))

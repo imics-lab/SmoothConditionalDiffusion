@@ -81,6 +81,13 @@ def expand_labels(y, T):
     y_expanded = torch.argsort(y_expanded, descending=True)
     return y_expanded.long()
 
+def soften_labels(y : torch.Tensor, alpha : float):
+    assert y.ndim == 1, "Labels must be catagorical to soften"
+    num_labels = torch.max(y)+1
+    counts = [torch.count_nonzer(y==i) for i in range(0, num_labels)]
+    new_y = torch.zeros((len(y), num_labels))
+
+
 def get_unimib(args):
     uds = unimib_load_dataset(
         incl_xyz_accel=False,
@@ -154,7 +161,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args .data_path = 'data'
-    args.dataset = 'unimib'
+    args.dataset = 'mini_synthetic'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy, _ = load_dataset(args)
     print('X shape: ', X.shape)
@@ -163,3 +170,7 @@ if __name__ == '__main__':
     print('Number of mislabeled instances: ', np.count_nonzero(y_clean != y_noisy))
     print('Measured mislabeling rate: ', np.count_nonzero(y_clean != y_noisy)/len(y_clean))
     print('Intended mislabeling rate: ', args.mislab_rate)
+    y_soft = soften_labels(y_noisy, 0.1)
+    print('Y soft shape: ', y_soft.shape)
+    print('Y_noisy[0]: ', y_noisy.numpy()[0])
+    print('Y_soft[0]: ', y_soft.numpy()[0])
