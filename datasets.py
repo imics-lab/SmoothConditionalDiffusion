@@ -94,6 +94,8 @@ def soften_labels(y : torch.Tensor, alpha : float):
         new_y[i,l] = 1.-sum([alpha*counts[i] if i!=l else 0 for i in range(num_labels) ])
     return new_y
 
+def unsoften_labels(y : torch.Tensor):
+    return torch.nn.functional.one_hot(torch.argmax(y, dim=-1))
 
 def get_unimib(args):
     uds = unimib_load_dataset(
@@ -168,7 +170,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args .data_path = 'data'
-    args.dataset = 'unimib'
+    args.dataset = 'mini_synthetic'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy, _ = load_dataset(args)
     print('X shape: ', X.shape)

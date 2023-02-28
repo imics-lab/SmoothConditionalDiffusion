@@ -44,8 +44,7 @@ class TestClassifier(nn.Module):
                 labels = labels.to(args.device).to(torch.long)
                 labels = nn.functional.one_hot(labels, num_classes=args.num_classes).float()
                 pred = self.model(signals)
-                if args.diffusion_style == 'probabilistic_conditional':
-                    #pred = torch.argmax(pred, dim=-1).long()
+                if args.diffusion_style == 'probabilistic_conditional' or args.diffusion_style == 'soft_conditional':
                     labels = torch.argmax(labels, dim=-1).float()              
                 loss = self.criterion(pred, labels)
 
@@ -65,8 +64,9 @@ class TestClassifier(nn.Module):
                 y = y.long().to(args.device)
                 pred = self.model(X)
                 pred = torch.argmax(pred, dim=-1)
-                if args.diffusion_style == 'probabilistic_conditional':
+                if args.diffusion_style == 'probabilistic_conditional' or args.diffusion_style == 'soft_conditional':
                     y = torch.argmax(y, dim=-1)
+                    
                 if all_preds == None:
                     all_preds = pred
                 else:
@@ -83,13 +83,18 @@ class TestClassifier(nn.Module):
 
     def train_and_test_classifier(self, args, X, y, logger=None, X_new = None, y_new = None):
         dataset = None
+        train_dataset = None
+        test_dataset = None
         if X_new == None or y_new == None:
+            print("Test pure set")
             dataset = torch.utils.data.TensorDataset(X, y)
             test_size = math.ceil(args.test_split* len(dataset))
             train_size = len(dataset) - test_size
             train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
         else:
+            print("Train set-> blended. Test set-> only original data")
             test_len = math.ceil(X.shape[0]*args.test_split)
+            #is this split making good sets???
             X_test, X_train = torch.split(X, [test_len, len(X)-test_len])
             y_test, y_train = torch.split(y, [test_len, len(X)-test_len])
             train_dataset = torch.utils.data.TensorDataset(torch.concat((X_train, X_new)), torch.concat((y_train, y_new)))

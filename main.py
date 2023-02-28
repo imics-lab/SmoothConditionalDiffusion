@@ -6,7 +6,7 @@
 
 import argparse
 import torch
-from datasets import load_dataset, expand_labels
+from datasets import load_dataset, expand_labels, soften_labels, unsoften_labels
 from diffuser import load_diffuser, train_diffusion
 from torch.utils.tensorboard import SummaryWriter
 import logging
@@ -21,6 +21,7 @@ import umap
 from matplotlib import pyplot as plt
 from datetime import datetime
 from get_fid_encoder import get_pretrained_encoder, get_fid_from_features
+import gc
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -28,22 +29,23 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='unimib')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='soft_conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
+    parser.add_argument('--run_name', help="folder to write losses for one training run", default='conditional')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instances to train on per iteration", default=64)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=150) #150
+    parser.add_argument('--epochs', help="Number of epochs for training", default=15) #150
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=4)
-    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=1000) #1000
-    parser.add_argument('--smoothing_alpha', help="Weight to give to T in computing training labels.", default=0.1) #1000
+    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=100) #1000
+    parser.add_argument('--smoothing_alpha', help="Weight to give to T in computing training labels.", default=0.1)
     args = parser.parse_args()
     return args
 
@@ -90,6 +92,9 @@ if __name__ == '__main__':
         T = torch.from_numpy(T).to(args.device)
         y_noisy = expand_labels(y_noisy, T)
         y_clean = torch.nn.functional.one_hot(y_clean.long(), num_classes=args.num_classes).long()
+    if args.diffusion_style == 'soft_conditional':
+        y_noisy = soften_labels(y_noisy, args.smoothing_alpha)
+        y_clean = torch.nn.functional.one_hot(y_clean.long(), num_classes=args.num_classes).long()
 
     print('Transition matrix: ', T)
     args.seq_length = X_original.shape[2]
@@ -126,18 +131,28 @@ if __name__ == '__main__':
         elif args.diffusion_style=='probabilistic_conditional':
             y_generated = torch.randint(args.num_classes, (len(y_clean),))
             y_generated = torch.mul(torch.nn.functional.one_hot(y_generated, num_classes=args.num_classes), args.num_classes-1)
+        elif args.diffusion_style=='soft_conditional':
+            y_generated = torch.randint(args.num_classes, (len(y_clean),))
+            y_generated = torch.nn.functional.one_hot(y_generated, num_classes=args.num_classes)
         X_generated = generator.sample(classes=y_generated.to(args.device))
     print('Shape of new data: ', X_generated.shape)
+
+    #Unsoften labels
+    if args.diffusion_style=='probabilistic_conditional' or args.diffusion_style=='soft_conditional':
+        y_noisy = unsoften_labels(y_noisy)
+    gc.collect()
 
     #Train and test a classifier on JUST original data
     test_clsfr = TestClassifier(args)   
     acc = test_clsfr.train_and_test_classifier(args, X_original, y_noisy, logger)
     results_dic['Accuracy on original data'] = acc
+    gc.collect()
 
     #Train and test a classifier on JUST synthetic data
     test_clsfr = TestClassifier(args)  
     acc = test_clsfr.train_and_test_classifier(args, X_generated, y_generated, logger)
     results_dic['Accuracy on synthetic data'] = acc
+    gc.collect()
 
     #Train and test a classifier on COMBINED data
     test_clsfr = TestClassifier(args)
@@ -150,6 +165,7 @@ if __name__ == '__main__':
             y_generated
     )
     results_dic['Accuracy on both'] = acc
+    gc.collect()
 
     #Save the results
     results_dic['Time'] = str(datetime.now())

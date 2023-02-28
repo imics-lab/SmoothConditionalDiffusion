@@ -50,7 +50,7 @@ def load_diffuser(args):
                 seq_length = args.seq_length,
                 timesteps = args.time_steps
             ).to(args.device)
-    elif args.diffusion_style == 'probabilistic_conditional':
+    elif args.diffusion_style == 'probabilistic_conditional' or args.diffusion_style == 'soft_conditional':
         if args.diffusion_model == 'UNet1d':
             assert args.data_cardinality == '1d', "Data cardinality must match denoising model"
             model = Unet1D_cls_free(
@@ -179,6 +179,8 @@ def train_diffusion(args, model, diffusion, dataloader, logger):
     elif args.diffusion_style == 'conditional':
         model, diffusion = train_conditional(args, model, diffusion, dataloader, logger, optimizer)
     elif args.diffusion_style == 'probabilistic_conditional':
+        model, diffusion = train_p_conditional(args, model, diffusion, dataloader, logger, optimizer)
+    elif args.diffusion_style == 'soft_conditional':
         model, diffusion = train_p_conditional(args, model, diffusion, dataloader, logger, optimizer)
     else:
         print(f'Selected diffusion style: {args.diffusion_style} is not supported.')
