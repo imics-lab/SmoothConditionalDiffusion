@@ -6,6 +6,7 @@
 # Date:         10 Feb, 2023            #
 #########################################
 
-python3 main.py --dataset=synthetic_5 --diffusion_style=probabilistic_conditional --dev_num=5 
+python3 main.py --dataset=synthetic_5 --diffusion_style=probabilistic_conditional --dev_num=5
+python3 main.py --dataset=synthetic_5 --diffusion_style=soft_conditional --dev_num=5  
 python3 main.py --dataset=synthetic_5 --diffusion_style=conditional --dev_num=5
 python3 main.py --dataset=synthetic_5 --diffusion_style=unconditional --dev_num=5

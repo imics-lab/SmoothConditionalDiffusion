@@ -28,7 +28,7 @@ class TestClassifier(nn.Module):
             nn.Flatten(),
             nn.LazyLinear(32),
             nn.LazyLinear(args.num_classes),
-            nn.Softmax()
+            nn.LogSoftmax()
         ).to(args.device)
 
         self.criterion = nn.CrossEntropyLoss()
@@ -70,12 +70,12 @@ class TestClassifier(nn.Module):
                 if all_preds == None:
                     all_preds = pred
                 else:
-                    all_preds = torch.concat((all_preds, pred))
+                    all_preds = torch.cat((all_preds, pred))
 
                 if all_true == None:
                     all_true = y
                 else:
-                    all_true = torch.concat((all_true, y))
+                    all_true = torch.cat((all_true, y))
         if args.device == 'cpu':
             return accuracy_score(all_true.detach().numpy(), all_preds.detach().numpy())
         else:

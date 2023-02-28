@@ -170,9 +170,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args .data_path = 'data'
-    args.dataset = 'mini_synthetic'
+    args.dataset = 'synthetic_5'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy, _ = load_dataset(args)
+    counts = [torch.count_nonzero(y_clean==i) for i in range(5)]
+    print(counts)
     print('X shape: ', X.shape)
     print('y_clean shape: ', y_clean.shape)
     print('y_noisy shape: ', y_noisy.shape)
