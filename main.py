@@ -29,10 +29,10 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='soft_conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
     parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
@@ -40,7 +40,7 @@ def load_args():
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instances to train on per iteration", default=64)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=3) #150
+    parser.add_argument('--epochs', help="Number of epochs for training", default=30) #150
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=4)
@@ -65,6 +65,9 @@ if __name__ == '__main__':
         os.mkdir(args.run_path)
     if not os.path.exists('results'):
         os.mkdir('results')
+    if not os.path.exists(os.path.join(args.run_path, args.run_name)):
+        os.mkdir(os.path.join(args.run_path, args.run_name))
+    
     logger = SummaryWriter(os.path.join("runs", args.run_path))
     if torch.cuda.is_available():
         args.device = 'cuda:' + str(args.dev_num)
@@ -72,7 +75,7 @@ if __name__ == '__main__':
         args.device = 'cpu'
     #args.device = 'cpu'
     args.num_workers = cpu_count()
-    print("---Experiments on Probilbalistic Conditional Diffusion---")
+    print("---Experiments on Soft Conditional Diffusion---")
 
     X_original, y_clean, y_noisy, T = load_dataset(args)
 
@@ -116,8 +119,8 @@ if __name__ == '__main__':
                 y_generated = torch.full((len(idxs),), i)
                 X_generated = generator.sample(batch_size=len(idxs))
             else:
-                y_generated = torch.concat([y_generated, torch.full((len(idxs),), i)])
-                X_generated = torch.concat([X_generated, generator.sample(batch_size=len(idxs))])
+                y_generated = torch.cat([y_generated, torch.full((len(idxs),), i)])
+                X_generated = torch.cat([X_generated, generator.sample(batch_size=len(idxs))])
     #Train with labels for both conditional approaches
     else:
         dataset = torch.utils.data.TensorDataset(X_original, y_noisy)

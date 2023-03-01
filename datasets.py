@@ -21,6 +21,7 @@ import zipfile
 from support.MITBIH import mitbih_allClass
 from support.har_dataloader import unimib_load_dataset
 from scipy.signal import resample
+from sklearn.preprocessing import MinMaxScaler
 
 def get_noisy_synthetic_dataset(args, num_classes, set_length=5001, num_channels=1):
     SIGNAL_LENGTH = 128
@@ -157,9 +158,12 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
         y_noisy = get_noisy_labels_from_clean(args, y_clean)
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
-
-    # print('Max y_clean: ', torch.max(y_clean))
-    # print('Max y_noisy: ', torch.max(y_noisy))
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    #X = scaler.fit_transform(X)
+    X -= torch.min(X)
+    X /= torch.max(X)
+    #print('Max y_clean: ', torch.max(y_clean))
+    #print('Max y_noisy: ', torch.max(y_noisy))
     
     args.cnt = len(X)
     return X, y_clean, y_noisy, T
@@ -181,6 +185,7 @@ if __name__ == '__main__':
     print('Number of mislabeled instances: ', np.count_nonzero(y_clean != y_noisy))
     print('Measured mislabeling rate: ', np.count_nonzero(y_clean != y_noisy)/len(y_clean))
     print('Intended mislabeling rate: ', args.mislab_rate)
+    print('x[0]', X[0])
     y_soft = soften_labels(y_noisy, 0.1)
     print('Y soft shape: ', y_soft.shape)
     print('Y_noisy[0]: ', y_noisy.numpy()[0])

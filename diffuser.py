@@ -92,7 +92,7 @@ def train_unconditional(args, model, diffusion, dataloader, logger, optimizer):
         
         is_best = False
         
-        save_signals(sampled_signals, os.path.join(args.run_path, f"{args.dataset}_{args.diffusion_style}_training_{epoch}.jpg"))
+        save_signals(sampled_signals, os.path.join(args.run_path, args.run_name, f"{args.dataset}_{args.diffusion_style}_training_{epoch}.jpg"))
         save_checkpoint({
             'epoch': epoch + 1,
             'model': model,
@@ -127,7 +127,7 @@ def train_conditional(args, model, diffusion, dataloader, logger, optimizer):
         
         is_best = False
         
-        save_signals_cls_free(sampled_signals, labels, os.path.join(args.run_path, f"{args.dataset}_{args.diffusion_style}_training_{epoch}.jpg"))
+        save_signals_cls_free(sampled_signals, labels, os.path.join(args.run_path, args.run_name, f"{args.dataset}_{args.diffusion_style}_training_{epoch}.jpg"))
         save_checkpoint({
             'epoch': epoch + 1,
             'model': model,
