@@ -634,10 +634,10 @@ def e4_load_dataset_torch(args):
         incl_rms_accel=True,
         one_hot_encode = True
     )
-    x_train = torch.from_numpy(x_train).permute((0,2,1))
-    y_train = torch.from_numpy(y_train)
-    x_test = torch.from_numpy(x_test).permute((0,2,1))
-    y_test = torch.from_numpy(y_test)
+    x_train = torch.from_numpy(x_train).permute((0,2,1)).float()
+    y_train = torch.from_numpy(y_train).long()
+    x_test = torch.from_numpy(x_test).permute((0,2,1)).float()
+    y_test = torch.from_numpy(y_test).long()
     
     return torch.cat((x_train, x_test)), torch.argmax(torch.cat((y_train, y_test)), dim=-1)
 
