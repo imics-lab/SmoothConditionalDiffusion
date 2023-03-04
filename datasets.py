@@ -19,7 +19,7 @@ import random
 from gen_ts_data import generate_signal_as_tensor
 import zipfile
 from support.MITBIH import mitbih_allClass
-from support.har_dataloader import unimib_load_dataset
+from support.har_dataloader import unimib_load_dataset, e4_load_dataset_torch
 from scipy.signal import resample
 from sklearn.preprocessing import MinMaxScaler
 
@@ -156,6 +156,10 @@ def load_dataset(args) -> tuple([torch.Tensor, torch.Tensor, torch.Tensor]):
         args.num_classes = 9
         X, y_clean = get_unimib(args)
         y_noisy = get_noisy_labels_from_clean(args, y_clean)
+    elif args.dataset == 'twristar':
+        args.num_classes = 6
+        X, y_clean = e4_load_dataset_torch(args)
+        y_noisy = get_noisy_labels_from_clean(args, y_clean)
     else:
         print(f'Chosen dataset: {args.dataset} is not supported')
     scaler = MinMaxScaler(feature_range=(0, 1))
@@ -174,7 +178,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args .data_path = 'data'
-    args.dataset = 'synthetic_5'
+    args.dataset = 'twristar'
     args.mislab_rate = 0.05
     X, y_clean, y_noisy, _ = load_dataset(args)
     counts = [torch.count_nonzero(y_clean==i) for i in range(5)]

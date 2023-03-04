@@ -52,6 +52,7 @@ from tabulate import tabulate # for verbose tables
 #credit https://stackoverflow.com/questions/9419162/download-returned-zip-file-from-url
 #many other methods I tried failed to download the file properly
 from torch.utils.data import Dataset, DataLoader
+import torch
 
 #data augmentation
 import tsaug
@@ -314,20 +315,20 @@ class unimib_load_dataset(Dataset):
 # shutil.copy(full_filename,'e4_get_x_y_sub.py')
 
 #credit https://stackoverflow.com/users/4944093/george-petrov for name method
-# def namestr(obj, namespace):
-#     return [name for name in namespace if namespace[name] is obj]
-# def get_shapes(np_arr_list):
-#     """Returns text, each line is shape and dtype for numpy array in list
-#        example: print(get_shapes([X_train, X_test, y_train, y_test]))"""
-#     shapes = ""
-#     shapes += "shapes call broke when making the function - not sure why"
-#     return shapes
-#     for i in np_arr_list:
-#         print('i=',i)
-#         my_name = namestr(i,globals())
-#         shapes += (my_name[0] + " shape is " + str(i.shape) \
-#             + " data type is " + str(i.dtype) + "\n")
-#     return shapes
+def namestr(obj, namespace):
+    return [name for name in namespace if namespace[name] is obj]
+def get_shapes(np_arr_list):
+    """Returns text, each line is shape and dtype for numpy array in list
+       example: print(get_shapes([X_train, X_test, y_train, y_test]))"""
+    shapes = ""
+    # shapes += "shapes call broke when making the function - not sure why"
+
+    for i in np_arr_list:
+        print('i=',i)
+        my_name = namestr(i,globals())
+        shapes += (my_name[0] + " shape is " + str(i.shape) \
+            + " data type is " + str(i.dtype) + "\n")
+    return shapes
 
 def unzip_e4_file(zip_ffname, working_dir):
     """checks for local copy, if none unzips the e4 zipfile in working_dir
@@ -343,6 +344,7 @@ def unzip_e4_file(zip_ffname, working_dir):
     else:
         #print("Using source file", zip_ffname)
         print("Unzipping e4 file in local directory", working_dir)
+        os.mkdir(working_dir)
         if (os.path.exists(zip_ffname)):
             shutil.unpack_archive(zip_ffname,working_dir,'zip')
         else:
@@ -484,22 +486,24 @@ def split_df_to_timeslice_nparrays(df, time_steps, step):
 """# Main Function to generate ndarrays"""
 
 def get_X_y_sub(
-    working_dir='', # this directory will be created inside colab
+    working_dir='support/content', # this directory will be created inside colab
+    
     # you probably need to change this path to your google drive mount
     # zip_dir = '/content/drive/MyDrive/Colab Notebooks/imics_lab_repositories/load_data_time_series_dev/HAR/e4_wristband_Nov2019/zip_datafiles/sub1',
-    zip_dir = 'e4_wristband_Nov2019/zip_datafiles/sub1',
+    zip_dir = 'support/zip_datafiles/sub1',
 
     zip_flist = [],
     # note the longer walk x25540_ zip file has not been labeled, this is for experiment only
     #zip_flist = ['1574625540_A01F11.zip'] # Old main to Alkek and back
     time_steps = 96,
     step = 32 #if equal to time_steps there will be no overlap of sliding window
-    ):
+):
     """processes e4 zip file and associated label csv file into X (data),
      y (labels), and sub (subject number) ndarrays.
      Returns X, y, sub, xys_info (a text file)
     """
     # create blank ndarrays to append to
+    
     my_X = np.zeros(shape=(1,time_steps,4))
     my_y = np.full(shape=(1,1), fill_value='n/a',dtype='<U10') # unicode 10 char
     my_sub = np.zeros(shape=(1,1),dtype=int) # one subject number per entry
@@ -523,7 +527,7 @@ def get_X_y_sub(
         my_df['label'].value_counts()
         print ("Label Counts\n",my_df['label'].value_counts())
         temp_X, temp_y, temp_sub = split_df_to_timeslice_nparrays(my_df, time_steps, step)
-        print(get_shapes([temp_X, temp_y, temp_sub]))
+        #print(get_shapes([temp_X, temp_y, temp_sub]))
         #print(temp_X[:5]) # "head" for ndarray
         #print(temp_y[:5])
         #print(temp_sub[:5])
@@ -539,7 +543,7 @@ def get_X_y_sub(
     y = np.delete(my_y, (0), axis=0) 
     sub = np.delete(my_sub, (0), axis=0)
     sub = sub.astype(int) # convert from float to int
-    print(get_shapes([X, y, sub]))
+    #print(get_shapes([X, y, sub]))
     # Print final counts for label ndarray - not quite as easy as pandas df
     unique, counts = np.unique(y, return_counts=True)
     print("Final Label Counts")
@@ -549,8 +553,8 @@ def get_X_y_sub(
     xys_info += ' '.join([str(elem) for elem in zip_flist]) # conv list to string
     xys_info += '\nTime steps =' + str(time_steps) + ', Step =' + str(step) + ', no resample\n'
     xys_info += 'Final Shapes\n'
-    xys_info += get_shapes([X, y, sub])
-    print (xys_info)
+    #xys_info += get_shapes([X, y, sub])
+    #print (xys_info)
     return X, y, sub, xys_info
 
 def e4_load_dataset(
@@ -619,14 +623,31 @@ def e4_load_dataset(
         return x_train, y_train, x_validation, y_validation, x_test, y_test
     else:
         return x_train, y_train, x_test, y_test
+    
+def e4_load_dataset_torch(args):
+    """
+    returns X -> (1047, 1, 96)
+            y -> (1047) in 6 classes
+    """
+    x_train, y_train, x_test, y_test = e4_load_dataset(
+        incl_xyz_accel=False,
+        incl_rms_accel=True,
+        one_hot_encode = True
+    )
+    x_train = torch.from_numpy(x_train).permute((0,2,1))
+    y_train = torch.from_numpy(y_train)
+    x_test = torch.from_numpy(x_test).permute((0,2,1))
+    y_test = torch.from_numpy(y_test)
+    
+    return torch.cat((x_train, x_test)), torch.argmax(torch.cat((y_train, y_test)), dim=-1)
 
 
 if __name__ == '__main__':
-    ds = e4_load_dataset(
-        incl_xyz_accel=False,
-        incl_rms_accel=True
+    x, y = e4_load_dataset_torch(
+        # incl_xyz_accel=False,
+        # incl_rms_accel=True
     )
-    print(type(ds))
-    print(len(ds))
+    print(type(x))
+    print(len(x))
             
     
