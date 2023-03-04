@@ -29,14 +29,15 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 def load_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='mini_synthetic')
+    parser.add_argument('--dataset', help="The dataset to run experiments on.", default='synthetic_5')
     parser.add_argument('--mislab_rate', help="Percentage of label noise to add.", default=0.05)
     parser.add_argument('--diffusion_model', help="A denoising model for reverse diffusion", default="UNet1d")
-    parser.add_argument('--diffusion_style', help="unconditional, conditional, or probabilistic_conditional", default='conditional')
+    parser.add_argument('--diffusion_style', help="unconditional, conditional, soft_conditional, or probabilistic_conditional", default='probabilistic_conditional')
     #parser.add_argument('--new_instances', help="The number of new instances of data to add", default=1000)
     parser.add_argument('--data_path', help="Directory for storing datasets", default='data')
-    parser.add_argument('--run_path', help="Directory for storing training samples", default='runs')
-    parser.add_argument('--run_name', help="folder to write losses for one training run", default='conditional')
+    parser.add_argument('--run_path', help="Directory for storing training samples", default='runs') #runs
+    parser.add_argument('--run_name', help="folder to write losses for one training run", default='probabilistic_conditional')
+    parser.add_argument('--results_path', help="folder to write experimental results", default='results')
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instances to train on per iteration", default=64)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
@@ -63,10 +64,12 @@ if __name__ == '__main__':
     args = load_args()
     if not os.path.exists(args.run_path):
         os.mkdir(args.run_path)
-    if not os.path.exists('results'):
-        os.mkdir('results')
+    if not os.path.exists(args.results_path):
+        os.mkdir(args.results_path)
     if not os.path.exists(os.path.join(args.run_path, args.run_name)):
         os.mkdir(os.path.join(args.run_path, args.run_name))
+    args.time_steps = int(args.time_steps)
+    args.epochs = int(args.epochs) 
     
     logger = SummaryWriter(os.path.join("runs", args.run_path))
     if torch.cuda.is_available():
@@ -142,8 +145,14 @@ if __name__ == '__main__':
 
     #Unsoften labels
     if args.diffusion_style=='probabilistic_conditional' or args.diffusion_style=='soft_conditional':
-        y_noisy = unsoften_labels(y_noisy)
+        y_noisy = unsoften_labels(args, y_noisy)
     gc.collect()
+
+    #Preserve the generated tensors
+    torch.save(X_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_X_generated.pt'))
+    torch.save(y_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_y_generated.pt'))
+    torch.save(model.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_denoiser.pt'))
+    torch.save(generator.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_generator.pt'))
 
     #Train and test a classifier on JUST original data
     test_clsfr = TestClassifier(args)   
@@ -188,12 +197,6 @@ if __name__ == '__main__':
     plt.scatter(embedding_orig[:,0], embedding_orig[:,1], c='blue', marker=',')
     plt.scatter(embedding_syn[:,0], embedding_syn[:,1], c='maroon', marker=',')
     plt.savefig(os.path.join('results', f'{args.dataset}_{args.diffusion_style}.pdf'))
-
-    #Preserve the generated tensors
-    torch.save(X_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_X_generated.pt'))
-    torch.save(y_generated, os.path.join('results', f'{args.dataset}_{args.diffusion_style}_y_generated.pt'))
-    torch.save(model.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_denoiser.pt'))
-    torch.save(generator.state_dict(), os.path.join('results', f'{args.dataset}_{args.diffusion_style}_generator.pt'))
 
     #Learn features with a the pre-trained encoder
     wave2vec = get_pretrained_encoder(args)
