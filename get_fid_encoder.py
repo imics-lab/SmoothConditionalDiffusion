@@ -10,7 +10,7 @@ import torch
 
 def get_pretrained_encoder(args):
     args.feat_extract_norm = 'layer'
-    t = Wav2Vec2FeatureExtractor(args)
+    t = Wav2Vec2FeatureExtractor(sampling_rate=100)
     return t
 
 def get_fid_from_features(f_original, f_synthetic):

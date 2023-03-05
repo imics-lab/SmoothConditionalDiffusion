@@ -41,11 +41,11 @@ def load_args():
     parser.add_argument('--data_cardinality', help="Dimensionality of data being processed", default='1d')
     parser.add_argument('--batch_size', help="Instances to train on per iteration", default=64)
     parser.add_argument('--lr', help="Learning Rate", default=0.001)
-    parser.add_argument('--epochs', help="Number of epochs for training", default=1) #150
+    parser.add_argument('--epochs', help="Number of epochs for training", default=150) #150
     parser.add_argument('--training_samples', help="number of samples to generate for each training epoch", default=4)
     parser.add_argument('--test_split', help="Portion of train data to hole out for test", default=0.2)
     parser.add_argument('--dev_num', help="Device number for running experiments on GPU", default=0)
-    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=10) #1000
+    parser.add_argument('--time_steps', help="Time steps for noising/denoising.", default=1000) #1000
     parser.add_argument('--smoothing_alpha', help="Weight to give to T in computing training labels.", default=0.1)
     args = parser.parse_args()
     return args

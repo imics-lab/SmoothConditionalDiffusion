@@ -5,6 +5,7 @@
 *.csv
 events.out.tfevents*
 results/*
+plots/*
 UniMiB-SHAR/*
 UniMiB-SHAR.zip
 launch.json
