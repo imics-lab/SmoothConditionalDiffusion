@@ -6,6 +6,7 @@
 
 import os
 import torch
+import pandas
 import argparse
 import numpy as np
 from sklearn.svm import SVC
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.sampling_rate = 100
     args.data_path = 'data'
+    args.mislab_rate = 0.05
     
     svm_tab = {
         'Dataset' : [],
@@ -79,6 +81,7 @@ if __name__ == '__main__':
             pred_3 = clsf_3.predict(test_X_3)
             svm_tab['Combined Acc'].append(accuracy_score(test_y_3, pred_3))
 
-    print(svm_tab)
+    df = pandas.DataFrame.from_dict(svm_tab)
+    print(df)
     with open(os.path.join('plots', 'svm_acc.txt'), 'w+') as f:
-        f.write(svm_tab)
+        f.write(df.to_string())

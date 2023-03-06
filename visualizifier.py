@@ -19,6 +19,8 @@ from datasets import load_dataset
 
 dif_list = ['unconditional', 'conditional', 'soft_conditional']
 ds_list = ['synthetic_5', 'unimib', 'mitbih', 'twristar']
+#ds_list = ['twristar']
+
 
 def get_w2v_features(args: any, X : torch.Tensor):
     wave2vec = get_pretrained_encoder(args)
@@ -106,9 +108,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.sampling_rate = 100
     args.data_path = 'data'
+    args.mislab_rate = 0.05
     
     fid_tab = {}
-    label_to_print = 1
+    label_to_print = 0
 
     for ds in ds_list:
         args.dataset = ds
@@ -125,9 +128,9 @@ if __name__ == '__main__':
             fname = ds + '_' + dif + ".pdf"
 
             plot_umap_of_orig_vs_synth(args, f_orig, f_gen, os.path.join('plots', fname), extract_features=False)
-            fid_tab[ds][i] = get_fid_from_features(f_orig, f_gen)
+            #fid_tab[ds][i] = get_fid_from_features(f_orig, f_gen)
             samp_name = os.path.join('plots', 'sample_'+ ds + '_' + dif + '_label_' + str(label_to_print) + '.pdf')
-            plot_samples_from_data(args, X_orig, y_orig, X_gen, y_gen, label_to_print, samp_name)
+            #plot_samples_from_data(args, X_orig, y_orig, X_gen, y_gen, label_to_print, samp_name)
 
     tab_name = os.path.join('plots', 'fid_table.txt')
-    prepare_fid_table(fid_tab, tab_name)
+    #prepare_fid_table(fid_tab, tab_name)
