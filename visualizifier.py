@@ -18,8 +18,10 @@ from get_fid_encoder import get_pretrained_encoder, get_fid_from_features
 from datasets import load_dataset
 
 dif_list = ['unconditional', 'conditional', 'soft_conditional']
-ds_list = ['synthetic_5', 'unimib', 'mitbih', 'twristar']
-#ds_list = ['twristar']
+#ds_list = ['synthetic_5', 'unimib', 'mitbih', 'twristar']
+ds_list = ['mitbih']
+
+orig_instance = None
 
 
 def get_w2v_features(args: any, X : torch.Tensor):
@@ -83,24 +85,40 @@ def plot_samples_from_data(
         X_gen : torch.Tensor,
         y_gen : torch.Tensor,
         label : int,
-        fname : str
+        fname : str,
+        dir : str
 ):
+    global orig_instance
     if y_gen.ndim > 1:
         y_gen = torch.argmax(y_gen, dim=-1)
-    orig_instance = random.randint(0, len(X_orig))
-    while y_orig[orig_instance] != label:
+    if not orig_instance:
         orig_instance = random.randint(0, len(X_orig))
+        while y_orig[orig_instance] != label:
+            orig_instance = random.randint(0, len(X_orig))
 
     gen_instance = random.randint(0, len(X_gen))
     while y_gen[gen_instance] != label:
         gen_instance = random.randint(0, len(X_gen))
-
+    print('Plotting orig instance: ', orig_instance)
+    print('Plotting gen instance: ', gen_instance)
     plt.figure()
     plt.plot(range(X_orig.shape[2]), X_orig[orig_instance, 0, :], c='blue')
+    plt.axis('off')
+    plt.savefig(os.path.join(dir, 'orig'+fname))
+
+    plt.figure()
     plt.plot(range(X_gen.shape[2]), X_gen[gen_instance, 0, :], c='maroon')
-    plt.savefig(fname)
+    plt.axis('off')
+    plt.savefig(os.path.join(dir, 'gen'+fname))
+
+    # plt.figure()
+    # plt.plot(range(X_orig.shape[2]), X_orig[orig_instance, 0, :], c='blue')
+    # plt.plot(range(X_gen.shape[2]), X_gen[gen_instance, 0, :], c='maroon')
+    # plt.axis('off')
+    # plt.savefig(os.path.join(dir, fname))
 
 if __name__ == '__main__':
+    
     if not os.path.isdir('plots'):
         os.mkdir('plots')
 
@@ -115,22 +133,23 @@ if __name__ == '__main__':
 
     for ds in ds_list:
         args.dataset = ds
+        orig_instance = None
         X_orig, _, y_orig, _ = load_dataset(args)
-        f_orig = get_w2v_features(args, X_orig)
+        #f_orig = get_w2v_features(args, X_orig)
         fid_tab[ds] =  [-1]*len(dif_list)
         for i, dif in enumerate(dif_list):
             print("Plotting: ", ds, ' ', dif)
             args.mislab_rate = 0
             X_gen = torch.load(os.path.join('results', ds+"_"+dif+"_X_generated.pt"))
             y_gen = torch.load(os.path.join('results', ds+"_"+dif+"_y_generated.pt"))
-            f_gen = get_w2v_features(args, X_gen)
+            #f_gen = get_w2v_features(args, X_gen)
 
             fname = ds + '_' + dif + ".pdf"
 
-            plot_umap_of_orig_vs_synth(args, f_orig, f_gen, os.path.join('plots', fname), extract_features=False)
+            #plot_umap_of_orig_vs_synth(args, f_orig, f_gen, os.path.join('plots', fname), extract_features=False)
             #fid_tab[ds][i] = get_fid_from_features(f_orig, f_gen)
-            samp_name = os.path.join('plots', 'sample_'+ ds + '_' + dif + '_label_' + str(label_to_print) + '.pdf')
-            #plot_samples_from_data(args, X_orig, y_orig, X_gen, y_gen, label_to_print, samp_name)
+            samp_name = 'sample_'+ ds + '_' + dif + '_label_' + str(label_to_print) + '.pdf'
+            plot_samples_from_data(args, X_orig, y_orig, X_gen, y_gen, label_to_print, samp_name, 'plots')
 
     tab_name = os.path.join('plots', 'fid_table.txt')
     #prepare_fid_table(fid_tab, tab_name)
